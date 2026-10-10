@@ -1,0 +1,29 @@
+{
+  "snapshotId": "illustrative-2026-10-11",
+  "rootPositionId": "position:demo",
+  "rootPositionUsd": 10000,
+  "chainId": 1,
+  "observedAt": "2026-10-11T00:00:00Z",
+  "mode": "fixture",
+  "nodes": [
+    {"id":"position:demo","kind":"position","label":"User holding $10,000 of vault shares"},
+    {"id":"vault:demo","kind":"vault","label":"Illustrative USDC Vault"},
+    {"id":"market:a","kind":"lending_market","label":"Illustrative Lending Market A"},
+    {"id":"market:b","kind":"lending_market","label":"Illustrative Lending Market B"},
+    {"id":"oracle:x","kind":"oracle","label":"Illustrative Oracle X"},
+    {"id":"asset:usdc","kind":"asset","label":"USDC"},
+    {"id":"asset:weth","kind":"asset","label":"WETH"},
+    {"id":"chain:1","kind":"chain","label":"Ethereum"},
+    {"id":"admin:demo","kind":"administrator","label":"Illustrative Vault Admin"}
+  ],
+  "edges": [
+    {"id":"e1","from":"position:demo","to":"vault:demo","kind":"HOLDS_SHARES_IN"},
+    {"id":"e2","from":"vault:demo","to":"market:a","kind":"ALLOCATES_TO","allocationBps":6000},
+    {"id":"e3","from":"vault:demo","to":"market:b","kind":"ALLOCATES_TO","allocationBps":4000},
+    {"id":"e4","from":"market:a","to":"oracle:x","kind":"USES_ORACLE"},
+    {"id":"e5","from":"market:a","to":"asset:weth","kind":"ACCEPTS_COLLATERAL"},
+    {"id":"e6","from":"vault:demo","to":"asset:usdc","kind":"ACCOUNTING_ASSET"},
+    {"id":"e7","from":"vault:demo","to":"chain:1","kind":"SETTLES_ON"},
+    {"id":"e8","from":"vault:demo","to":"admin:demo","kind":"CONTROLLED_BY"}
+  ]
+}
