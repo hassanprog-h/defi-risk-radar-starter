@@ -49,7 +49,12 @@ export async function prepareSafeProposal(input: SafeProposalInput) {
     threshold = raw(t, 'INVALID_SAFE_THRESHOLD'); nonce = raw(n, 'INVALID_SAFE_NONCE');
     if (!Array.isArray(o) || !o.every(a => isAddress(String(a)))) throw new Error();
     owners = o.map(String); version = String(v).slice(0, 32);
-  } catch { throw new Error('OWNER_IS_NOT_A_SAFE: the contract does not answer the Safe owner/threshold interface'); }
+  } catch {
+    // A rate limit or outage must not be reported as "not a Safe": re-check the provider before concluding.
+    try { if (!await rpc.sameBlock(block.number, block.hash)) throw new Error(); }
+    catch { throw new Error('PROVIDER_UNAVAILABLE: the Safe interface could not be read; retry later'); }
+    throw new Error('OWNER_IS_NOT_A_SAFE: the contract does not answer the Safe owner/threshold interface');
+  }
   if (threshold < 1n || threshold > BigInt(owners.length) || !/^\d+\.\d+\.\d+/.test(version)) throw new Error('OWNER_IS_NOT_A_SAFE: inconsistent owner/threshold configuration');
 
   // Bundler3 route: adapter code exists and is linked to the published Bundler3.

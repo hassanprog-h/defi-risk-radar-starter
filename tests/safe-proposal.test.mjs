@@ -84,3 +84,8 @@ test('live: a real Safe position yields a fork-verified, importable batch', { sk
   assert.ok(Object.values(result.proposal.simulation.checks).every(Boolean));
   assert.equal(result.batch.meta.checksum, batchChecksum(result.batch));
 });
+
+test('a provider failure during the Safe check is reported as unavailable, never as "not a Safe"', async () => {
+  const reader = rpc({ values: { [`${safe}|getThreshold`]: undefined }, sameBlock: async () => { throw new Error('HTTP 429'); } });
+  await assert.rejects(() => prepareSafeProposal({ ...base, rpc: reader, shares: '1' }), /PROVIDER_UNAVAILABLE/);
+});
