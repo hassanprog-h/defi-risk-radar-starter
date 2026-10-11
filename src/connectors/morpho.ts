@@ -33,9 +33,10 @@ export const v2Schema = z.object({
   owner: ref, curator: ref, sentinels: z.array(z.object({ sentinel: ref })).max(100),
   adapters: z.object({ pageInfo, items: z.array(z.object({
     address: addressSchema, type: text, __typename: text, assets: rawInteger, assetsUsd: usd,
-    positions: z.object({ pageInfo, items: z.array(position).max(100).nullable() }).optional(),
+    positions: z.object({ pageInfo, items: z.array(position).max(200).nullable() }).optional(),
     metaMorpho: v1Schema.optional(), innerVault: ref.optional()
-  })).max(100).nullable() })
+  })).max(100).nullable() }),
+  paginationIssues: z.array(text).max(10).optional()
 });
 export type VaultV1 = z.infer<typeof v1Schema>;
 export type VaultV2 = z.infer<typeof v2Schema>;
@@ -54,7 +55,11 @@ export class MorphoClient {
   }
   async rest(path: string) { return this.http.request(this.base + path); }
   async vault(chainId: number, address: string, version: 1 | 2) {
-    const raw = await this.http.request(this.base + '/graphql', { query: version === 1 ? v1Query : v2Query, variables: { address, chainId } });
+    const result = await this.vaultPage(chainId, address, version);
+    return 'state' in result ? result : this.completeV2Pages(chainId, address, result);
+  }
+  private async vaultPage(chainId: number, address: string, version: 1 | 2, offsets: { adapterSkip?: number; positionSkip?: number } = {}) {
+    const raw = await this.http.request(this.base + '/graphql', { query: version === 1 ? v1Query : v2Query, variables: { address, chainId, ...offsets } });
     const envelope = z.object({ data: z.record(z.string(), z.unknown()).nullish(), errors: z.array(z.unknown()).optional() }).parse(raw);
     if (envelope.errors?.length) {
       const notFound = envelope.errors.every(error => error !== null && typeof error === 'object' && 'status' in error && error.status === 'NOT_FOUND');
@@ -69,6 +74,57 @@ export class MorphoClient {
     } catch (error) {
       if (error instanceof ProviderError) throw error;
       throw new ProviderError('UPSTREAM_SCHEMA_MISMATCH');
+    }
+  }
+  /** Offset arguments verified against live GraphQL introspection, 2026-10-11.
+   * Stage pages before publication; duplicated/changed/truncated lists never claim completeness.
+   * At most 32 adapters and 200 indexed positions per adapter; accounting has its own active-market budget.
+   */
+  private async completeV2Pages(chainId: number, address: string, initial: VaultV2): Promise<VaultV2> {
+    const result = structuredClone(initial);
+    const total = initial.adapters.pageInfo?.countTotal;
+    if (total === undefined || !initial.adapters.items) return initial;
+    try {
+      if (total > 32) throw new ProviderError('PAGINATION_BUDGET');
+      if (initial.adapters.items.length !== Math.min(20, total)) throw new ProviderError('PAGINATION_CHANGED');
+      const collected: NonNullable<VaultV2['adapters']['items']> = [];
+      for (let adapterSkip = 0; adapterSkip < total; adapterSkip += 20) {
+        const page = adapterSkip === 0 ? initial : await this.vaultPage(chainId, address, 2, { adapterSkip });
+        if ('state' in page || page.adapters.pageInfo?.countTotal !== total) throw new ProviderError('PAGINATION_CHANGED');
+        const batch = structuredClone(page.adapters.items ?? []);
+        if (batch.length !== Math.min(20, total - adapterSkip)) throw new ProviderError('PAGINATION_CHANGED');
+        const maximum = Math.max(0, ...batch.map(a => a.positions?.pageInfo?.countTotal ?? 0));
+        if (maximum > 200) throw new ProviderError('PAGINATION_BUDGET');
+        for (let positionSkip = 20; positionSkip < maximum; positionSkip += 20) {
+          const next = await this.vaultPage(chainId, address, 2, { adapterSkip, positionSkip });
+          if ('state' in next || next.adapters.pageInfo?.countTotal !== total || next.adapters.items?.length !== batch.length) throw new ProviderError('PAGINATION_CHANGED');
+          for (let i = 0; i < batch.length; i++) {
+            const adapter = batch[i]!, part = next.adapters.items[i]!;
+            if (adapter.address !== part.address || adapter.__typename !== part.__typename) throw new ProviderError('PAGINATION_CHANGED');
+            if (!adapter.positions) continue;
+            const count = adapter.positions.pageInfo?.countTotal;
+            if (count === undefined || part.positions?.pageInfo?.countTotal !== count) throw new ProviderError('PAGINATION_CHANGED');
+            const items = part.positions.items ?? [];
+            if (items.length !== Math.max(0, Math.min(20, count - positionSkip))) throw new ProviderError('PAGINATION_CHANGED');
+            adapter.positions.items = [...(adapter.positions.items ?? []), ...items];
+          }
+        }
+        for (const adapter of batch) if (adapter.positions?.pageInfo) {
+          const items = adapter.positions.items ?? [];
+          if (items.length !== adapter.positions.pageInfo.countTotal || new Set(items.map(p => p.market.marketId)).size !== items.length) throw new ProviderError('PAGINATION_CHANGED');
+          adapter.positions.pageInfo.count = items.length;
+        }
+        collected.push(...batch);
+      }
+      if (new Set(collected.map(a => a.address)).size !== collected.length || collected.length !== total) throw new ProviderError('PAGINATION_CHANGED');
+      result.adapters = { pageInfo: { count: collected.length, countTotal: total }, items: collected };
+      return result;
+    } catch (error) {
+      // Retain the original partial data and totals; traversal + pinned accounting continue to block estimates.
+      const reason = error instanceof ProviderError && error.code === 'PAGINATION_BUDGET'
+        ? 'V2 pagination budget exceeded (32 adapters / 200 indexed positions per adapter); discovery is incomplete.'
+        : 'V2 pages changed, contained duplicate entries or could not be retrieved; discovery is incomplete. Retry inspection.';
+      return { ...initial, paginationIssues: [reason] };
     }
   }
   async list(chainId: number, version: 1 | 2, cursor?: string) {

@@ -1,0 +1,5163 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "HISTORICAL_PRICE_BENCHMARK",
+  "generatedAt": "2026-10-11T04:55:30.665Z",
+  "protocol": {
+    "version": "depeg-benchmark-v1",
+    "frozenBeforeDownload": "2026-10-11",
+    "training": [
+      "2022-04-01T00:00:00Z",
+      "2022-06-01T00:00:00Z"
+    ],
+    "validation": [
+      "2022-06-01T00:00:00Z",
+      "2022-07-01T00:00:00Z"
+    ],
+    "test": [
+      "2023-01-01T00:00:00Z",
+      "2023-04-01T00:00:00Z"
+    ],
+    "secondaryTest": [
+      "2023-06-01T00:00:00Z",
+      "2023-07-01T00:00:00Z"
+    ],
+    "products": [
+      {
+        "provider": "coinbase",
+        "product": "UST-USD",
+        "roles": [
+          "training",
+          "validation"
+        ]
+      },
+      {
+        "provider": "coinbase",
+        "product": "DAI-USD",
+        "roles": [
+          "training",
+          "validation",
+          "test"
+        ]
+      },
+      {
+        "provider": "coinbase",
+        "product": "USDT-USD",
+        "roles": [
+          "training",
+          "validation",
+          "test",
+          "secondaryTest"
+        ]
+      },
+      {
+        "provider": "binance_us",
+        "product": "USDCUSD",
+        "roles": [
+          "training",
+          "validation",
+          "test"
+        ]
+      }
+    ],
+    "forecast": {
+      "horizonHours": 24,
+      "event": "additional 2% drawdown in subsequent hourly closes",
+      "regimes": "PEGGED >=0.995; WATCH <0.995 or hourly return <-0.002; DEPEG <0.99; DISTRESSED <0.95"
+    },
+    "guard": {
+      "rule": "two consecutive closed hours below 0.995 USD with latest close falling",
+      "delayHours": 1,
+      "costBps": [
+        10,
+        30,
+        100
+      ],
+      "end": "end of each test window",
+      "destination": "actual USDT-USD closes (USD cash for USDT source)",
+      "positionUsd": 10000
+    },
+    "limitations": [
+      "Historical snapshots retrieved now, not a vintage-data archive.",
+      "One training collapse is insufficient to calibrate rare incident risk.",
+      "Price-only counterfactual; vault availability, historical liquidity and order fills unverified.",
+      "No parameter changes selected on held-out outcomes."
+    ]
+  },
+  "datasetHash": "f6d17be7e5b6b6a730d084638f94c393216812946e1242c5feea1970b2ee92cc",
+  "model": {
+    "version": "empirical-depeg-v1",
+    "trainedThrough": "2022-06-01T00:00:00Z",
+    "trainingSamples": 5561,
+    "trainingEvents": 392,
+    "validation": {
+      "samples": 2091,
+      "events": 0,
+      "brier": 0.00003668789754448376,
+      "baselineBrier": 0.00496896964729289
+    },
+    "liveExecutionValidated": false
+  },
+  "series": [
+    {
+      "provider": "coinbase",
+      "product": "UST-USD",
+      "roles": [
+        "training",
+        "validation"
+      ],
+      "filename": "UST-USD.json",
+      "rows": 1361,
+      "sha256": "8006eb6462107e24b7c6828610696dca853f09f1b976b0169b599a2e2d7a1188"
+    },
+    {
+      "provider": "coinbase",
+      "product": "DAI-USD",
+      "roles": [
+        "training",
+        "validation",
+        "test"
+      ],
+      "filename": "DAI-USD.json",
+      "rows": 4339,
+      "sha256": "4d052cf6bc6d05e7c6b3cc7de01328b2cd29978d019575286ef5ef5b45e7bd43"
+    },
+    {
+      "provider": "coinbase",
+      "product": "USDT-USD",
+      "roles": [
+        "training",
+        "validation",
+        "test",
+        "secondaryTest"
+      ],
+      "filename": "USDT-USD.json",
+      "rows": 5060,
+      "sha256": "6cb7aaf4642d0d8095c351ddcfc0870afe53869b93c1fae846143a605b7c30c0"
+    },
+    {
+      "provider": "binance_us",
+      "product": "USDCUSD",
+      "roles": [
+        "training",
+        "validation",
+        "test"
+      ],
+      "filename": "USDCUSD.json",
+      "rows": 4338,
+      "sha256": "089c4ab4a1e3ea3f1bdff88e2623cd415b94db8054f7dabdc52d7fac0d9889f4"
+    }
+  ],
+  "scores": [
+    {
+      "role": "validation",
+      "product": "UST-USD",
+      "samples": 0,
+      "skipped": 0,
+      "events": 0,
+      "brier": null,
+      "baselineBrier": null,
+      "calibration": [
+        {
+          "regime": "PEGGED",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "WATCH",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "DEPEG",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "DISTRESSED",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        }
+      ]
+    },
+    {
+      "role": "validation",
+      "product": "DAI-USD",
+      "samples": 697,
+      "skipped": 0,
+      "events": 0,
+      "brier": 0.00003668789754448376,
+      "baselineBrier": 0.00496896964729289,
+      "calibration": [
+        {
+          "regime": "PEGGED",
+          "samples": 697,
+          "predicted": 0.006057053536537674,
+          "observed": 0
+        },
+        {
+          "regime": "WATCH",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "DEPEG",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "DISTRESSED",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        }
+      ]
+    },
+    {
+      "role": "validation",
+      "product": "USDT-USD",
+      "samples": 697,
+      "skipped": 0,
+      "events": 0,
+      "brier": 0.00003668789754448376,
+      "baselineBrier": 0.00496896964729289,
+      "calibration": [
+        {
+          "regime": "PEGGED",
+          "samples": 697,
+          "predicted": 0.006057053536537674,
+          "observed": 0
+        },
+        {
+          "regime": "WATCH",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "DEPEG",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "DISTRESSED",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        }
+      ]
+    },
+    {
+      "role": "validation",
+      "product": "USDCUSD",
+      "samples": 697,
+      "skipped": 0,
+      "events": 0,
+      "brier": 0.00003668789754448376,
+      "baselineBrier": 0.00496896964729289,
+      "calibration": [
+        {
+          "regime": "PEGGED",
+          "samples": 697,
+          "predicted": 0.006057053536537674,
+          "observed": 0
+        },
+        {
+          "regime": "WATCH",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "DEPEG",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "DISTRESSED",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        }
+      ]
+    },
+    {
+      "role": "test",
+      "product": "DAI-USD",
+      "samples": 2059,
+      "skipped": 0,
+      "events": 40,
+      "brier": 0.0206750743379382,
+      "baselineBrier": 0.02165703496445765,
+      "calibration": [
+        {
+          "regime": "PEGGED",
+          "samples": 2000,
+          "predicted": 0.006057053536537631,
+          "observed": 0.012
+        },
+        {
+          "regime": "WATCH",
+          "samples": 12,
+          "predicted": 0.5,
+          "observed": 0
+        },
+        {
+          "regime": "DEPEG",
+          "samples": 35,
+          "predicted": 0.3333333333333334,
+          "observed": 0.4
+        },
+        {
+          "regime": "DISTRESSED",
+          "samples": 12,
+          "predicted": 0.8476658476658477,
+          "observed": 0.16666666666666666
+        }
+      ]
+    },
+    {
+      "role": "test",
+      "product": "USDT-USD",
+      "samples": 2060,
+      "skipped": 0,
+      "events": 0,
+      "brier": 0.0007647363793962805,
+      "baselineBrier": 0.0049689696472927595,
+      "calibration": [
+        {
+          "regime": "PEGGED",
+          "samples": 2054,
+          "predicted": 0.00605705353653762,
+          "observed": 0
+        },
+        {
+          "regime": "WATCH",
+          "samples": 6,
+          "predicted": 0.5,
+          "observed": 0
+        },
+        {
+          "regime": "DEPEG",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "DISTRESSED",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        }
+      ]
+    },
+    {
+      "role": "test",
+      "product": "USDCUSD",
+      "samples": 2058,
+      "skipped": 0,
+      "events": 32,
+      "brier": 0.021029073941904165,
+      "baselineBrier": 0.01832590900124523,
+      "calibration": [
+        {
+          "regime": "PEGGED",
+          "samples": 1987,
+          "predicted": 0.006057053536537634,
+          "observed": 0.011575239053850024
+        },
+        {
+          "regime": "WATCH",
+          "samples": 19,
+          "predicted": 0.5,
+          "observed": 0.05263157894736842
+        },
+        {
+          "regime": "DEPEG",
+          "samples": 40,
+          "predicted": 0.3333333333333335,
+          "observed": 0.2
+        },
+        {
+          "regime": "DISTRESSED",
+          "samples": 12,
+          "predicted": 0.8476658476658477,
+          "observed": 0
+        }
+      ]
+    },
+    {
+      "role": "secondaryTest",
+      "product": "USDT-USD",
+      "samples": 672,
+      "skipped": 0,
+      "events": 0,
+      "brier": 0.00003668789754448376,
+      "baselineBrier": 0.004968969647292885,
+      "calibration": [
+        {
+          "regime": "PEGGED",
+          "samples": 672,
+          "predicted": 0.0060570535365376595,
+          "observed": 0
+        },
+        {
+          "regime": "WATCH",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "DEPEG",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        },
+        {
+          "regime": "DISTRESSED",
+          "samples": 0,
+          "predicted": null,
+          "observed": null
+        }
+      ]
+    }
+  ],
+  "counterfactuals": [
+    {
+      "role": "test",
+      "product": "DAI-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 10,
+      "positionUsd": 10000,
+      "start": "2023-01-01T00:00:00.000Z",
+      "end": "2023-04-01T00:00:00.000Z",
+      "signalAt": "2023-03-11T05:00:00.000Z",
+      "executedAt": "2023-03-11T06:00:00.000Z",
+      "sourceExecutionPrice": 0.9628,
+      "destinationExecutionPrice": 1.00466,
+      "destination": "USDT-USD actual market prices",
+      "holdingTerminalUsd": 9998.999899989998,
+      "holdingMinimumUsd": 8582.85828582858,
+      "holdingMinimumHourlyCloseUsd": 8900.8900890089,
+      "reallocatedTerminalUsd": 9578.258402791684,
+      "suspiciousIntrahourBars": [],
+      "terminalBenefitUsd": -420.7414971983144,
+      "postSignalTroughBenefitUsd": 674.1129104250758,
+      "alarms": [
+        {
+          "at": "2023-03-11T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-11T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-11T10:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-11T22:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T07:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T12:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T15:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T20:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T09:00:00.000Z",
+          "additionalDrop2Percent": false
+        }
+      ],
+      "falseAlarms": 10,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "test",
+      "product": "DAI-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 30,
+      "positionUsd": 10000,
+      "start": "2023-01-01T00:00:00.000Z",
+      "end": "2023-04-01T00:00:00.000Z",
+      "signalAt": "2023-03-11T05:00:00.000Z",
+      "executedAt": "2023-03-11T06:00:00.000Z",
+      "sourceExecutionPrice": 0.9628,
+      "destinationExecutionPrice": 1.00466,
+      "destination": "USDT-USD actual market prices",
+      "holdingTerminalUsd": 9998.999899989998,
+      "holdingMinimumUsd": 8582.85828582858,
+      "holdingMinimumHourlyCloseUsd": 8900.8900890089,
+      "reallocatedTerminalUsd": 9559.082710293602,
+      "suspiciousIntrahourBars": [],
+      "terminalBenefitUsd": -439.91718969639624,
+      "postSignalTroughBenefitUsd": 654.943735251034,
+      "alarms": [
+        {
+          "at": "2023-03-11T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-11T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-11T10:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-11T22:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T07:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T12:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T15:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T20:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T09:00:00.000Z",
+          "additionalDrop2Percent": false
+        }
+      ],
+      "falseAlarms": 10,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "test",
+      "product": "DAI-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 100,
+      "positionUsd": 10000,
+      "start": "2023-01-01T00:00:00.000Z",
+      "end": "2023-04-01T00:00:00.000Z",
+      "signalAt": "2023-03-11T05:00:00.000Z",
+      "executedAt": "2023-03-11T06:00:00.000Z",
+      "sourceExecutionPrice": 0.9628,
+      "destinationExecutionPrice": 1.00466,
+      "destination": "USDT-USD actual market prices",
+      "holdingTerminalUsd": 9998.999899989998,
+      "holdingMinimumUsd": 8582.85828582858,
+      "holdingMinimumHourlyCloseUsd": 8900.8900890089,
+      "reallocatedTerminalUsd": 9491.967786550316,
+      "suspiciousIntrahourBars": [],
+      "terminalBenefitUsd": -507.0321134396818,
+      "postSignalTroughBenefitUsd": 587.851622141885,
+      "alarms": [
+        {
+          "at": "2023-03-11T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-11T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-11T10:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-11T22:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T07:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T12:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T15:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T20:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T09:00:00.000Z",
+          "additionalDrop2Percent": false
+        }
+      ],
+      "falseAlarms": 10,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "test",
+      "product": "USDT-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 10,
+      "positionUsd": 10000,
+      "start": "2023-01-01T00:00:00.000Z",
+      "end": "2023-04-01T00:00:00.000Z",
+      "signalAt": null,
+      "executedAt": null,
+      "sourceExecutionPrice": null,
+      "destinationExecutionPrice": 1,
+      "destination": "USD cash assumption",
+      "holdingTerminalUsd": 10009.205062784533,
+      "holdingMinimumUsd": 9975.486517584672,
+      "holdingMinimumHourlyCloseUsd": 9999.3996698184,
+      "reallocatedTerminalUsd": 10009.205062784533,
+      "suspiciousIntrahourBars": [],
+      "terminalBenefitUsd": 0,
+      "postSignalTroughBenefitUsd": null,
+      "alarms": [],
+      "falseAlarms": 0,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "test",
+      "product": "USDT-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 30,
+      "positionUsd": 10000,
+      "start": "2023-01-01T00:00:00.000Z",
+      "end": "2023-04-01T00:00:00.000Z",
+      "signalAt": null,
+      "executedAt": null,
+      "sourceExecutionPrice": null,
+      "destinationExecutionPrice": 1,
+      "destination": "USD cash assumption",
+      "holdingTerminalUsd": 10009.205062784533,
+      "holdingMinimumUsd": 9975.486517584672,
+      "holdingMinimumHourlyCloseUsd": 9999.3996698184,
+      "reallocatedTerminalUsd": 10009.205062784533,
+      "suspiciousIntrahourBars": [],
+      "terminalBenefitUsd": 0,
+      "postSignalTroughBenefitUsd": null,
+      "alarms": [],
+      "falseAlarms": 0,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "test",
+      "product": "USDT-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 100,
+      "positionUsd": 10000,
+      "start": "2023-01-01T00:00:00.000Z",
+      "end": "2023-04-01T00:00:00.000Z",
+      "signalAt": null,
+      "executedAt": null,
+      "sourceExecutionPrice": null,
+      "destinationExecutionPrice": 1,
+      "destination": "USD cash assumption",
+      "holdingTerminalUsd": 10009.205062784533,
+      "holdingMinimumUsd": 9975.486517584672,
+      "holdingMinimumHourlyCloseUsd": 9999.3996698184,
+      "reallocatedTerminalUsd": 10009.205062784533,
+      "suspiciousIntrahourBars": [],
+      "terminalBenefitUsd": 0,
+      "postSignalTroughBenefitUsd": null,
+      "alarms": [],
+      "falseAlarms": 0,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "test",
+      "product": "USDCUSD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 10,
+      "positionUsd": 10000,
+      "start": "2023-01-01T00:00:00.000Z",
+      "end": "2023-04-01T00:00:00.000Z",
+      "signalAt": "2023-03-11T08:00:00.000Z",
+      "executedAt": "2023-03-11T09:00:00.000Z",
+      "sourceExecutionPrice": 0.9071,
+      "destinationExecutionPrice": 1.00497,
+      "destination": "USDT-USD actual market prices",
+      "holdingTerminalUsd": 10001.00010001,
+      "holdingMinimumUsd": 3300.3300330033003,
+      "holdingMinimumHourlyCloseUsd": 8772.877287728772,
+      "reallocatedTerminalUsd": 9021.352411100092,
+      "suspiciousIntrahourBars": [
+        {
+          "at": "2023-03-11T15:00:00.000Z",
+          "low": 0.33,
+          "close": 0.9169
+        }
+      ],
+      "terminalBenefitUsd": -979.6476889099085,
+      "postSignalTroughBenefitUsd": 61.390596177743646,
+      "alarms": [
+        {
+          "at": "2023-03-11T08:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T10:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T12:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T20:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T22:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T12:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T15:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T17:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T20:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T22:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T02:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T07:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T09:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T11:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T16:00:00.000Z",
+          "additionalDrop2Percent": false
+        }
+      ],
+      "falseAlarms": 17,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "test",
+      "product": "USDCUSD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 30,
+      "positionUsd": 10000,
+      "start": "2023-01-01T00:00:00.000Z",
+      "end": "2023-04-01T00:00:00.000Z",
+      "signalAt": "2023-03-11T08:00:00.000Z",
+      "executedAt": "2023-03-11T09:00:00.000Z",
+      "sourceExecutionPrice": 0.9071,
+      "destinationExecutionPrice": 1.00497,
+      "destination": "USDT-USD actual market prices",
+      "holdingTerminalUsd": 10001.00010001,
+      "holdingMinimumUsd": 3300.3300330033003,
+      "holdingMinimumHourlyCloseUsd": 8772.877287728772,
+      "reallocatedTerminalUsd": 9003.291645512303,
+      "suspiciousIntrahourBars": [
+        {
+          "at": "2023-03-11T15:00:00.000Z",
+          "low": 0.33,
+          "close": 0.9169
+        }
+      ],
+      "terminalBenefitUsd": -997.708454497697,
+      "postSignalTroughBenefitUsd": 43.33596897905045,
+      "alarms": [
+        {
+          "at": "2023-03-11T08:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T10:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T12:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T20:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T22:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T12:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T15:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T17:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T20:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T22:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T02:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T07:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T09:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T11:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T16:00:00.000Z",
+          "additionalDrop2Percent": false
+        }
+      ],
+      "falseAlarms": 17,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "test",
+      "product": "USDCUSD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 100,
+      "positionUsd": 10000,
+      "start": "2023-01-01T00:00:00.000Z",
+      "end": "2023-04-01T00:00:00.000Z",
+      "signalAt": "2023-03-11T08:00:00.000Z",
+      "executedAt": "2023-03-11T09:00:00.000Z",
+      "sourceExecutionPrice": 0.9071,
+      "destinationExecutionPrice": 1.00497,
+      "destination": "USDT-USD actual market prices",
+      "holdingTerminalUsd": 10001.00010001,
+      "holdingMinimumUsd": 3300.3300330033003,
+      "holdingMinimumHourlyCloseUsd": 8772.877287728772,
+      "reallocatedTerminalUsd": 8940.078965955045,
+      "suspiciousIntrahourBars": [
+        {
+          "at": "2023-03-11T15:00:00.000Z",
+          "low": 0.33,
+          "close": 0.9169
+        }
+      ],
+      "terminalBenefitUsd": -1060.9211340549555,
+      "postSignalTroughBenefitUsd": -19.855226216372102,
+      "alarms": [
+        {
+          "at": "2023-03-11T08:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T10:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T12:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T20:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-11T22:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2023-03-12T12:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T15:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T17:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T20:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-12T22:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T02:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T07:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T09:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T11:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2023-03-13T16:00:00.000Z",
+          "additionalDrop2Percent": false
+        }
+      ],
+      "falseAlarms": 17,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "secondaryTest",
+      "product": "USDT-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 10,
+      "positionUsd": 10000,
+      "start": "2023-06-01T00:00:00.000Z",
+      "end": "2023-07-01T00:00:00.000Z",
+      "signalAt": null,
+      "executedAt": null,
+      "sourceExecutionPrice": null,
+      "destinationExecutionPrice": 1,
+      "destination": "USD cash assumption",
+      "holdingTerminalUsd": 9995.40114971257,
+      "holdingMinimumUsd": 9898.525368657834,
+      "holdingMinimumHourlyCloseUsd": 9957.61059735066,
+      "reallocatedTerminalUsd": 9995.40114971257,
+      "suspiciousIntrahourBars": [],
+      "terminalBenefitUsd": 0,
+      "postSignalTroughBenefitUsd": null,
+      "alarms": [],
+      "falseAlarms": 0,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "secondaryTest",
+      "product": "USDT-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 30,
+      "positionUsd": 10000,
+      "start": "2023-06-01T00:00:00.000Z",
+      "end": "2023-07-01T00:00:00.000Z",
+      "signalAt": null,
+      "executedAt": null,
+      "sourceExecutionPrice": null,
+      "destinationExecutionPrice": 1,
+      "destination": "USD cash assumption",
+      "holdingTerminalUsd": 9995.40114971257,
+      "holdingMinimumUsd": 9898.525368657834,
+      "holdingMinimumHourlyCloseUsd": 9957.61059735066,
+      "reallocatedTerminalUsd": 9995.40114971257,
+      "suspiciousIntrahourBars": [],
+      "terminalBenefitUsd": 0,
+      "postSignalTroughBenefitUsd": null,
+      "alarms": [],
+      "falseAlarms": 0,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "secondaryTest",
+      "product": "USDT-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 100,
+      "positionUsd": 10000,
+      "start": "2023-06-01T00:00:00.000Z",
+      "end": "2023-07-01T00:00:00.000Z",
+      "signalAt": null,
+      "executedAt": null,
+      "sourceExecutionPrice": null,
+      "destinationExecutionPrice": 1,
+      "destination": "USD cash assumption",
+      "holdingTerminalUsd": 9995.40114971257,
+      "holdingMinimumUsd": 9898.525368657834,
+      "holdingMinimumHourlyCloseUsd": 9957.61059735066,
+      "reallocatedTerminalUsd": 9995.40114971257,
+      "suspiciousIntrahourBars": [],
+      "terminalBenefitUsd": 0,
+      "postSignalTroughBenefitUsd": null,
+      "alarms": [],
+      "falseAlarms": 0,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "training_in_sample",
+      "product": "UST-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 10,
+      "positionUsd": 10000,
+      "start": "2022-05-01T00:00:00.000Z",
+      "end": "2022-06-01T00:00:00.000Z",
+      "signalAt": "2022-05-08T01:00:00.000Z",
+      "executedAt": "2022-05-08T02:00:00.000Z",
+      "sourceExecutionPrice": 0.988,
+      "destinationExecutionPrice": 1,
+      "destination": "USDT-USD actual market prices",
+      "holdingTerminalUsd": 328.90000000000003,
+      "holdingMinimumUsd": 205.29999999999998,
+      "holdingMinimumHourlyCloseUsd": 296.1,
+      "reallocatedTerminalUsd": 9857.8810512,
+      "suspiciousIntrahourBars": [
+        {
+          "at": "2022-05-11T07:00:00.000Z",
+          "low": 0.266,
+          "close": 0.358
+        },
+        {
+          "at": "2022-05-12T16:00:00.000Z",
+          "low": 0.252,
+          "close": 0.342
+        },
+        {
+          "at": "2022-05-13T04:00:00.000Z",
+          "low": 0.09,
+          "close": 0.132
+        },
+        {
+          "at": "2022-05-26T13:00:00.000Z",
+          "low": 0.06,
+          "close": 0.0758
+        },
+        {
+          "at": "2022-05-26T19:00:00.000Z",
+          "low": 0.03612,
+          "close": 0.04642
+        },
+        {
+          "at": "2022-05-27T10:00:00.000Z",
+          "low": 0.02053,
+          "close": 0.03196
+        }
+      ],
+      "terminalBenefitUsd": 9528.9810512,
+      "postSignalTroughBenefitUsd": 9297.656640000001,
+      "alarms": [
+        {
+          "at": "2022-05-08T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-08T13:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-09T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-09T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-09T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T04:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T09:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-13T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-14T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-14T05:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-14T07:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-14T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-14T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-14T18:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T17:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T09:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T13:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T06:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T09:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T17:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T22:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T00:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T02:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T13:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T22:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T01:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T06:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T17:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T21:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-22T02:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-22T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-22T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-22T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-22T16:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-22T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T04:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T15:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-23T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-24T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-24T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T18:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T21:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-25T01:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T04:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T09:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-25T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T18:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T01:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T13:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-27T00:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T03:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T06:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T09:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T13:00:00.000Z",
+          "additionalDrop2Percent": null
+        }
+      ],
+      "falseAlarms": 18,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "training_in_sample",
+      "product": "UST-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 30,
+      "positionUsd": 10000,
+      "start": "2022-05-01T00:00:00.000Z",
+      "end": "2022-06-01T00:00:00.000Z",
+      "signalAt": "2022-05-08T01:00:00.000Z",
+      "executedAt": "2022-05-08T02:00:00.000Z",
+      "sourceExecutionPrice": 0.988,
+      "destinationExecutionPrice": 1,
+      "destination": "USDT-USD actual market prices",
+      "holdingTerminalUsd": 328.90000000000003,
+      "holdingMinimumUsd": 205.29999999999998,
+      "holdingMinimumHourlyCloseUsd": 296.1,
+      "reallocatedTerminalUsd": 9838.145553600001,
+      "suspiciousIntrahourBars": [
+        {
+          "at": "2022-05-11T07:00:00.000Z",
+          "low": 0.266,
+          "close": 0.358
+        },
+        {
+          "at": "2022-05-12T16:00:00.000Z",
+          "low": 0.252,
+          "close": 0.342
+        },
+        {
+          "at": "2022-05-13T04:00:00.000Z",
+          "low": 0.09,
+          "close": 0.132
+        },
+        {
+          "at": "2022-05-26T13:00:00.000Z",
+          "low": 0.06,
+          "close": 0.0758
+        },
+        {
+          "at": "2022-05-26T19:00:00.000Z",
+          "low": 0.03612,
+          "close": 0.04642
+        },
+        {
+          "at": "2022-05-27T10:00:00.000Z",
+          "low": 0.02053,
+          "close": 0.03196
+        }
+      ],
+      "terminalBenefitUsd": 9509.245553600002,
+      "postSignalTroughBenefitUsd": 9278.44992,
+      "alarms": [
+        {
+          "at": "2022-05-08T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-08T13:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-09T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-09T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-09T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T04:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T09:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-13T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-14T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-14T05:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-14T07:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-14T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-14T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-14T18:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T17:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T09:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T13:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T06:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T09:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T17:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T22:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T00:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T02:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T13:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T22:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T01:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T06:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T17:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T21:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-22T02:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-22T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-22T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-22T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-22T16:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-22T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T04:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T15:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-23T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-24T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-24T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T18:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T21:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-25T01:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T04:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T09:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-25T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T18:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T01:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T13:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-27T00:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T03:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T06:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T09:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T13:00:00.000Z",
+          "additionalDrop2Percent": null
+        }
+      ],
+      "falseAlarms": 18,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    },
+    {
+      "role": "training_in_sample",
+      "product": "UST-USD",
+      "status": "PRICE_ONLY_COUNTERFACTUAL",
+      "costBps": 100,
+      "positionUsd": 10000,
+      "start": "2022-05-01T00:00:00.000Z",
+      "end": "2022-06-01T00:00:00.000Z",
+      "signalAt": "2022-05-08T01:00:00.000Z",
+      "executedAt": "2022-05-08T02:00:00.000Z",
+      "sourceExecutionPrice": 0.988,
+      "destinationExecutionPrice": 1,
+      "destination": "USDT-USD actual market prices",
+      "holdingTerminalUsd": 328.90000000000003,
+      "holdingMinimumUsd": 205.29999999999998,
+      "holdingMinimumHourlyCloseUsd": 296.1,
+      "reallocatedTerminalUsd": 9769.071312,
+      "suspiciousIntrahourBars": [
+        {
+          "at": "2022-05-11T07:00:00.000Z",
+          "low": 0.266,
+          "close": 0.358
+        },
+        {
+          "at": "2022-05-12T16:00:00.000Z",
+          "low": 0.252,
+          "close": 0.342
+        },
+        {
+          "at": "2022-05-13T04:00:00.000Z",
+          "low": 0.09,
+          "close": 0.132
+        },
+        {
+          "at": "2022-05-26T13:00:00.000Z",
+          "low": 0.06,
+          "close": 0.0758
+        },
+        {
+          "at": "2022-05-26T19:00:00.000Z",
+          "low": 0.03612,
+          "close": 0.04642
+        },
+        {
+          "at": "2022-05-27T10:00:00.000Z",
+          "low": 0.02053,
+          "close": 0.03196
+        }
+      ],
+      "terminalBenefitUsd": 9440.171312,
+      "postSignalTroughBenefitUsd": 9211.2264,
+      "alarms": [
+        {
+          "at": "2022-05-08T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-08T13:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-09T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-09T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-09T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-10T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T04:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-11T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T09:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-12T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-13T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-13T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-14T01:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-14T05:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-14T07:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-14T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-14T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-14T18:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T10:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T17:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-15T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T09:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T13:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-16T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T02:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T06:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T09:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T17:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-17T22:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T00:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T02:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-18T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T13:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-18T22:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T01:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T06:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T14:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T17:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-19T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T03:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-20T21:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T15:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-21T21:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-22T02:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-22T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-22T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-22T12:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-22T16:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-22T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T00:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T04:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T08:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T15:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-23T19:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-23T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T04:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-24T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T14:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-24T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T18:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-24T21:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-25T01:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T04:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T09:00:00.000Z",
+          "additionalDrop2Percent": false
+        },
+        {
+          "at": "2022-05-25T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T18:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T20:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-25T23:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T01:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T05:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T07:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T11:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T13:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-26T16:00:00.000Z",
+          "additionalDrop2Percent": true
+        },
+        {
+          "at": "2022-05-27T00:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T03:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T06:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T09:00:00.000Z",
+          "additionalDrop2Percent": null
+        },
+        {
+          "at": "2022-05-27T13:00:00.000Z",
+          "additionalDrop2Percent": null
+        }
+      ],
+      "falseAlarms": 18,
+      "historicalExecutionVerified": false,
+      "vaultWithdrawalVerified": false,
+      "caveats": [
+        "No historical order-book depth, market fill or vault withdrawal is established.",
+        "Costs are sensitivity assumptions, not historical executable quotes.",
+        "Post-signal benefit compares subsequent minimum hourly-close source/destination values; these minima may occur at different times, not a tradable return.",
+        "Intrahour lows include isolated venue prints; suspicious bars are retained and flagged, not used for hourly-close benefit.",
+        "Missing candles are not forward filled; alarms with missing future labels are unknown.",
+        "The guard detects price stress after it begins; it does not predict an unforeseen exploit."
+      ]
+    }
+  ],
+  "curves": [
+    {
+      "product": "UST-USD",
+      "candles": []
+    },
+    {
+      "product": "DAI-USD",
+      "candles": [
+        [
+          1678233600,
+          0.9998
+        ],
+        [
+          1678237200,
+          0.9999
+        ],
+        [
+          1678240800,
+          0.9999
+        ],
+        [
+          1678244400,
+          0.9998
+        ],
+        [
+          1678248000,
+          1
+        ],
+        [
+          1678251600,
+          0.9999
+        ],
+        [
+          1678255200,
+          0.9998
+        ],
+        [
+          1678258800,
+          0.9998
+        ],
+        [
+          1678262400,
+          0.9998
+        ],
+        [
+          1678266000,
+          0.9999
+        ],
+        [
+          1678269600,
+          0.9999
+        ],
+        [
+          1678273200,
+          0.9999
+        ],
+        [
+          1678276800,
+          0.9998
+        ],
+        [
+          1678280400,
+          0.9998
+        ],
+        [
+          1678284000,
+          0.9998
+        ],
+        [
+          1678287600,
+          0.9999
+        ],
+        [
+          1678291200,
+          0.9998
+        ],
+        [
+          1678294800,
+          0.9998
+        ],
+        [
+          1678298400,
+          0.9998
+        ],
+        [
+          1678302000,
+          0.9998
+        ],
+        [
+          1678305600,
+          0.9999
+        ],
+        [
+          1678309200,
+          0.9999
+        ],
+        [
+          1678312800,
+          0.9999
+        ],
+        [
+          1678316400,
+          0.9998
+        ],
+        [
+          1678320000,
+          0.9999
+        ],
+        [
+          1678323600,
+          0.9998
+        ],
+        [
+          1678327200,
+          0.9999
+        ],
+        [
+          1678330800,
+          0.9999
+        ],
+        [
+          1678334400,
+          0.9999
+        ],
+        [
+          1678338000,
+          0.9999
+        ],
+        [
+          1678341600,
+          0.9998
+        ],
+        [
+          1678345200,
+          0.9999
+        ],
+        [
+          1678348800,
+          0.9998
+        ],
+        [
+          1678352400,
+          0.9999
+        ],
+        [
+          1678356000,
+          0.9997
+        ],
+        [
+          1678359600,
+          0.9999
+        ],
+        [
+          1678363200,
+          0.9997
+        ],
+        [
+          1678366800,
+          0.9998
+        ],
+        [
+          1678370400,
+          0.9996
+        ],
+        [
+          1678374000,
+          0.9997
+        ],
+        [
+          1678377600,
+          0.9998
+        ],
+        [
+          1678381200,
+          0.9998
+        ],
+        [
+          1678384800,
+          0.9998
+        ],
+        [
+          1678388400,
+          0.9999
+        ],
+        [
+          1678392000,
+          0.9998
+        ],
+        [
+          1678395600,
+          0.9998
+        ],
+        [
+          1678399200,
+          0.9999
+        ],
+        [
+          1678402800,
+          0.9998
+        ],
+        [
+          1678406400,
+          0.9998
+        ],
+        [
+          1678410000,
+          0.9998
+        ],
+        [
+          1678413600,
+          0.9997
+        ],
+        [
+          1678417200,
+          0.9998
+        ],
+        [
+          1678420800,
+          1.0001
+        ],
+        [
+          1678424400,
+          0.9999
+        ],
+        [
+          1678428000,
+          0.9999
+        ],
+        [
+          1678431600,
+          0.9998
+        ],
+        [
+          1678435200,
+          0.9998
+        ],
+        [
+          1678438800,
+          0.9998
+        ],
+        [
+          1678442400,
+          0.9999
+        ],
+        [
+          1678446000,
+          0.9999
+        ],
+        [
+          1678449600,
+          0.9998
+        ],
+        [
+          1678453200,
+          0.9997
+        ],
+        [
+          1678456800,
+          0.9997
+        ],
+        [
+          1678460400,
+          0.9993
+        ],
+        [
+          1678464000,
+          0.9997
+        ],
+        [
+          1678467600,
+          0.9998
+        ],
+        [
+          1678471200,
+          0.9998
+        ],
+        [
+          1678474800,
+          1
+        ],
+        [
+          1678478400,
+          1.0002
+        ],
+        [
+          1678482000,
+          1.0004
+        ],
+        [
+          1678485600,
+          1.0005
+        ],
+        [
+          1678489200,
+          0.9998
+        ],
+        [
+          1678492800,
+          0.9987
+        ],
+        [
+          1678496400,
+          1.0017
+        ],
+        [
+          1678500000,
+          1.002
+        ],
+        [
+          1678503600,
+          0.97
+        ],
+        [
+          1678507200,
+          0.9605
+        ],
+        [
+          1678510800,
+          0.9626
+        ],
+        [
+          1678514400,
+          0.943
+        ],
+        [
+          1678518000,
+          0.89
+        ],
+        [
+          1678521600,
+          0.9396
+        ],
+        [
+          1678525200,
+          0.9261
+        ],
+        [
+          1678528800,
+          0.92
+        ],
+        [
+          1678532400,
+          0.91
+        ],
+        [
+          1678536000,
+          0.9217
+        ],
+        [
+          1678539600,
+          0.9181
+        ],
+        [
+          1678543200,
+          0.9145
+        ],
+        [
+          1678546800,
+          0.9392
+        ],
+        [
+          1678550400,
+          0.9496
+        ],
+        [
+          1678554000,
+          0.9716
+        ],
+        [
+          1678557600,
+          0.9696
+        ],
+        [
+          1678561200,
+          0.9709
+        ],
+        [
+          1678564800,
+          0.9891
+        ],
+        [
+          1678568400,
+          0.9676
+        ],
+        [
+          1678572000,
+          0.9634
+        ],
+        [
+          1678575600,
+          0.9699
+        ],
+        [
+          1678579200,
+          0.9633
+        ],
+        [
+          1678582800,
+          0.9773
+        ],
+        [
+          1678586400,
+          0.9754
+        ],
+        [
+          1678590000,
+          0.9799
+        ],
+        [
+          1678593600,
+          0.9713
+        ],
+        [
+          1678597200,
+          0.9726
+        ],
+        [
+          1678600800,
+          0.9601
+        ],
+        [
+          1678604400,
+          0.9444
+        ],
+        [
+          1678608000,
+          0.9542
+        ],
+        [
+          1678611600,
+          0.9571
+        ],
+        [
+          1678615200,
+          0.9595
+        ],
+        [
+          1678618800,
+          0.9587
+        ],
+        [
+          1678622400,
+          0.9579
+        ],
+        [
+          1678626000,
+          0.9639
+        ],
+        [
+          1678629600,
+          0.9622
+        ],
+        [
+          1678633200,
+          0.9584
+        ],
+        [
+          1678636800,
+          0.9596
+        ],
+        [
+          1678640400,
+          0.9672
+        ],
+        [
+          1678644000,
+          0.9685
+        ],
+        [
+          1678647600,
+          0.968
+        ],
+        [
+          1678651200,
+          0.9682
+        ],
+        [
+          1678654800,
+          0.9726
+        ],
+        [
+          1678658400,
+          0.9907
+        ],
+        [
+          1678662000,
+          0.9937
+        ],
+        [
+          1678665600,
+          0.9923
+        ],
+        [
+          1678669200,
+          0.9957
+        ],
+        [
+          1678672800,
+          0.9947
+        ],
+        [
+          1678676400,
+          0.9942
+        ],
+        [
+          1678680000,
+          0.9934
+        ],
+        [
+          1678683600,
+          0.992
+        ],
+        [
+          1678687200,
+          0.9913
+        ],
+        [
+          1678690800,
+          0.992
+        ],
+        [
+          1678694400,
+          0.9897
+        ],
+        [
+          1678698000,
+          0.9888
+        ],
+        [
+          1678701600,
+          0.9875
+        ],
+        [
+          1678705200,
+          0.9873
+        ],
+        [
+          1678708800,
+          0.9918
+        ],
+        [
+          1678712400,
+          0.9942
+        ],
+        [
+          1678716000,
+          0.9981
+        ],
+        [
+          1678719600,
+          0.9994
+        ],
+        [
+          1678723200,
+          0.9998
+        ],
+        [
+          1678726800,
+          0.9981
+        ],
+        [
+          1678730400,
+          0.9992
+        ],
+        [
+          1678734000,
+          0.9998
+        ],
+        [
+          1678737600,
+          0.999
+        ],
+        [
+          1678741200,
+          0.9977
+        ],
+        [
+          1678744800,
+          0.9995
+        ],
+        [
+          1678748400,
+          0.9992
+        ],
+        [
+          1678752000,
+          0.9991
+        ],
+        [
+          1678755600,
+          0.9995
+        ],
+        [
+          1678759200,
+          0.9995
+        ],
+        [
+          1678762800,
+          0.9995
+        ],
+        [
+          1678766400,
+          0.9996
+        ],
+        [
+          1678770000,
+          0.9993
+        ],
+        [
+          1678773600,
+          0.9994
+        ],
+        [
+          1678777200,
+          0.9998
+        ],
+        [
+          1678780800,
+          0.9974
+        ],
+        [
+          1678784400,
+          0.9988
+        ],
+        [
+          1678788000,
+          0.9989
+        ],
+        [
+          1678791600,
+          0.999
+        ],
+        [
+          1678795200,
+          0.9995
+        ],
+        [
+          1678798800,
+          0.9982
+        ],
+        [
+          1678802400,
+          0.9985
+        ],
+        [
+          1678806000,
+          0.9998
+        ],
+        [
+          1678809600,
+          0.9998
+        ],
+        [
+          1678813200,
+          0.9993
+        ],
+        [
+          1678816800,
+          0.9994
+        ],
+        [
+          1678820400,
+          0.9996
+        ],
+        [
+          1678824000,
+          0.9993
+        ],
+        [
+          1678827600,
+          0.9999
+        ],
+        [
+          1678831200,
+          0.9998
+        ],
+        [
+          1678834800,
+          0.9996
+        ],
+        [
+          1678838400,
+          0.9992
+        ],
+        [
+          1678842000,
+          0.999
+        ],
+        [
+          1678845600,
+          0.9986
+        ],
+        [
+          1678849200,
+          0.999
+        ],
+        [
+          1678852800,
+          0.9994
+        ],
+        [
+          1678856400,
+          0.9985
+        ],
+        [
+          1678860000,
+          0.9985
+        ],
+        [
+          1678863600,
+          0.9983
+        ],
+        [
+          1678867200,
+          0.9989
+        ],
+        [
+          1678870800,
+          0.9989
+        ],
+        [
+          1678874400,
+          0.999
+        ],
+        [
+          1678878000,
+          0.9989
+        ],
+        [
+          1678881600,
+          1
+        ],
+        [
+          1678885200,
+          0.9996
+        ],
+        [
+          1678888800,
+          0.9992
+        ],
+        [
+          1678892400,
+          0.9994
+        ],
+        [
+          1678896000,
+          0.9992
+        ],
+        [
+          1678899600,
+          0.9996
+        ],
+        [
+          1678903200,
+          1.0001
+        ],
+        [
+          1678906800,
+          0.9998
+        ],
+        [
+          1678910400,
+          0.9997
+        ],
+        [
+          1678914000,
+          0.9997
+        ],
+        [
+          1678917600,
+          0.9998
+        ],
+        [
+          1678921200,
+          0.9998
+        ]
+      ]
+    },
+    {
+      "product": "USDT-USD",
+      "candles": [
+        [
+          1678233600,
+          0.99987
+        ],
+        [
+          1678237200,
+          0.9999
+        ],
+        [
+          1678240800,
+          0.99987
+        ],
+        [
+          1678244400,
+          0.99986
+        ],
+        [
+          1678248000,
+          0.99991
+        ],
+        [
+          1678251600,
+          0.99994
+        ],
+        [
+          1678255200,
+          0.99988
+        ],
+        [
+          1678258800,
+          0.99997
+        ],
+        [
+          1678262400,
+          0.99997
+        ],
+        [
+          1678266000,
+          0.99992
+        ],
+        [
+          1678269600,
+          0.99992
+        ],
+        [
+          1678273200,
+          0.99989
+        ],
+        [
+          1678276800,
+          0.99996
+        ],
+        [
+          1678280400,
+          0.99996
+        ],
+        [
+          1678284000,
+          0.99993
+        ],
+        [
+          1678287600,
+          0.9999
+        ],
+        [
+          1678291200,
+          0.99992
+        ],
+        [
+          1678294800,
+          0.9999
+        ],
+        [
+          1678298400,
+          0.99994
+        ],
+        [
+          1678302000,
+          0.99994
+        ],
+        [
+          1678305600,
+          0.99986
+        ],
+        [
+          1678309200,
+          0.99987
+        ],
+        [
+          1678312800,
+          1
+        ],
+        [
+          1678316400,
+          0.99983
+        ],
+        [
+          1678320000,
+          0.99984
+        ],
+        [
+          1678323600,
+          0.99989
+        ],
+        [
+          1678327200,
+          0.99992
+        ],
+        [
+          1678330800,
+          0.99993
+        ],
+        [
+          1678334400,
+          0.99991
+        ],
+        [
+          1678338000,
+          0.9999
+        ],
+        [
+          1678341600,
+          0.9999
+        ],
+        [
+          1678345200,
+          0.99982
+        ],
+        [
+          1678348800,
+          0.99981
+        ],
+        [
+          1678352400,
+          0.99982
+        ],
+        [
+          1678356000,
+          0.99979
+        ],
+        [
+          1678359600,
+          0.99967
+        ],
+        [
+          1678363200,
+          0.99971
+        ],
+        [
+          1678366800,
+          0.99958
+        ],
+        [
+          1678370400,
+          0.99984
+        ],
+        [
+          1678374000,
+          0.99974
+        ],
+        [
+          1678377600,
+          0.99975
+        ],
+        [
+          1678381200,
+          0.99971
+        ],
+        [
+          1678384800,
+          0.99969
+        ],
+        [
+          1678388400,
+          0.99979
+        ],
+        [
+          1678392000,
+          0.99998
+        ],
+        [
+          1678395600,
+          1
+        ],
+        [
+          1678399200,
+          1.00015
+        ],
+        [
+          1678402800,
+          1.00001
+        ],
+        [
+          1678406400,
+          1.00021
+        ],
+        [
+          1678410000,
+          0.99996
+        ],
+        [
+          1678413600,
+          0.99999
+        ],
+        [
+          1678417200,
+          0.99994
+        ],
+        [
+          1678420800,
+          1.00001
+        ],
+        [
+          1678424400,
+          1.00003
+        ],
+        [
+          1678428000,
+          0.99998
+        ],
+        [
+          1678431600,
+          0.99992
+        ],
+        [
+          1678435200,
+          0.99993
+        ],
+        [
+          1678438800,
+          0.99993
+        ],
+        [
+          1678442400,
+          0.99996
+        ],
+        [
+          1678446000,
+          0.99998
+        ],
+        [
+          1678449600,
+          0.99998
+        ],
+        [
+          1678453200,
+          1
+        ],
+        [
+          1678456800,
+          0.99999
+        ],
+        [
+          1678460400,
+          1.00003
+        ],
+        [
+          1678464000,
+          1.00004
+        ],
+        [
+          1678467600,
+          0.99999
+        ],
+        [
+          1678471200,
+          1
+        ],
+        [
+          1678474800,
+          1.00019
+        ],
+        [
+          1678478400,
+          1.00029
+        ],
+        [
+          1678482000,
+          1.00132
+        ],
+        [
+          1678485600,
+          1.00357
+        ],
+        [
+          1678489200,
+          1.00426
+        ],
+        [
+          1678492800,
+          1.00688
+        ],
+        [
+          1678496400,
+          1.01299
+        ],
+        [
+          1678500000,
+          1.0122
+        ],
+        [
+          1678503600,
+          1.00794
+        ],
+        [
+          1678507200,
+          1.00374
+        ],
+        [
+          1678510800,
+          1.00466
+        ],
+        [
+          1678514400,
+          1.00685
+        ],
+        [
+          1678518000,
+          1.00599
+        ],
+        [
+          1678521600,
+          1.00497
+        ],
+        [
+          1678525200,
+          1.00503
+        ],
+        [
+          1678528800,
+          1.0055
+        ],
+        [
+          1678532400,
+          1.00542
+        ],
+        [
+          1678536000,
+          1.0051
+        ],
+        [
+          1678539600,
+          1.00579
+        ],
+        [
+          1678543200,
+          1.00681
+        ],
+        [
+          1678546800,
+          1.00861
+        ],
+        [
+          1678550400,
+          1.0107
+        ],
+        [
+          1678554000,
+          1.01001
+        ],
+        [
+          1678557600,
+          1.01178
+        ],
+        [
+          1678561200,
+          1.01135
+        ],
+        [
+          1678564800,
+          1.00928
+        ],
+        [
+          1678568400,
+          1.00739
+        ],
+        [
+          1678572000,
+          1.00773
+        ],
+        [
+          1678575600,
+          1.00769
+        ],
+        [
+          1678579200,
+          1.00813
+        ],
+        [
+          1678582800,
+          1.0084
+        ],
+        [
+          1678586400,
+          1.00912
+        ],
+        [
+          1678590000,
+          1.00998
+        ],
+        [
+          1678593600,
+          1.01019
+        ],
+        [
+          1678597200,
+          1.01201
+        ],
+        [
+          1678600800,
+          1.01071
+        ],
+        [
+          1678604400,
+          1.00887
+        ],
+        [
+          1678608000,
+          1.00854
+        ],
+        [
+          1678611600,
+          1.00751
+        ],
+        [
+          1678615200,
+          1.00728
+        ],
+        [
+          1678618800,
+          1.00686
+        ],
+        [
+          1678622400,
+          1.00784
+        ],
+        [
+          1678626000,
+          1.0091
+        ],
+        [
+          1678629600,
+          1.01156
+        ],
+        [
+          1678633200,
+          1.01177
+        ],
+        [
+          1678636800,
+          1.01129
+        ],
+        [
+          1678640400,
+          1.01131
+        ],
+        [
+          1678644000,
+          1.01497
+        ],
+        [
+          1678647600,
+          1.01434
+        ],
+        [
+          1678651200,
+          1.0118
+        ],
+        [
+          1678654800,
+          1.01022
+        ],
+        [
+          1678658400,
+          1.00822
+        ],
+        [
+          1678662000,
+          1.00782
+        ],
+        [
+          1678665600,
+          1.00885
+        ],
+        [
+          1678669200,
+          1.00773
+        ],
+        [
+          1678672800,
+          1.00569
+        ],
+        [
+          1678676400,
+          1.00428
+        ],
+        [
+          1678680000,
+          1.00585
+        ],
+        [
+          1678683600,
+          1.00441
+        ],
+        [
+          1678687200,
+          1.00471
+        ],
+        [
+          1678690800,
+          1.00449
+        ],
+        [
+          1678694400,
+          1.00298
+        ],
+        [
+          1678698000,
+          1.00475
+        ],
+        [
+          1678701600,
+          1.00378
+        ],
+        [
+          1678705200,
+          1.00235
+        ],
+        [
+          1678708800,
+          1.0017
+        ],
+        [
+          1678712400,
+          1.00428
+        ],
+        [
+          1678716000,
+          1.0079
+        ],
+        [
+          1678719600,
+          1.00519
+        ],
+        [
+          1678723200,
+          1.00501
+        ],
+        [
+          1678726800,
+          1.00432
+        ],
+        [
+          1678730400,
+          1.00411
+        ],
+        [
+          1678734000,
+          1.00435
+        ],
+        [
+          1678737600,
+          1.00473
+        ],
+        [
+          1678741200,
+          1.0048
+        ],
+        [
+          1678744800,
+          1.00399
+        ],
+        [
+          1678748400,
+          1.00449
+        ],
+        [
+          1678752000,
+          1.00501
+        ],
+        [
+          1678755600,
+          1.00421
+        ],
+        [
+          1678759200,
+          1.00463
+        ],
+        [
+          1678762800,
+          1.0052
+        ],
+        [
+          1678766400,
+          1.0055
+        ],
+        [
+          1678770000,
+          1.0053
+        ],
+        [
+          1678773600,
+          1.0056
+        ],
+        [
+          1678777200,
+          1.00619
+        ],
+        [
+          1678780800,
+          1.00579
+        ],
+        [
+          1678784400,
+          1.00539
+        ],
+        [
+          1678788000,
+          1.00528
+        ],
+        [
+          1678791600,
+          1.00491
+        ],
+        [
+          1678795200,
+          1.00667
+        ],
+        [
+          1678798800,
+          1.00468
+        ],
+        [
+          1678802400,
+          1.00451
+        ],
+        [
+          1678806000,
+          1.00429
+        ],
+        [
+          1678809600,
+          1.00414
+        ],
+        [
+          1678813200,
+          1.00328
+        ],
+        [
+          1678816800,
+          1.00355
+        ],
+        [
+          1678820400,
+          1.00342
+        ],
+        [
+          1678824000,
+          1.0035
+        ],
+        [
+          1678827600,
+          1.00419
+        ],
+        [
+          1678831200,
+          1.00417
+        ],
+        [
+          1678834800,
+          1.00367
+        ],
+        [
+          1678838400,
+          1.00366
+        ],
+        [
+          1678842000,
+          1.0038
+        ],
+        [
+          1678845600,
+          1.00409
+        ],
+        [
+          1678849200,
+          1.00481
+        ],
+        [
+          1678852800,
+          1.00522
+        ],
+        [
+          1678856400,
+          1.00504
+        ],
+        [
+          1678860000,
+          1.00524
+        ],
+        [
+          1678863600,
+          1.00477
+        ],
+        [
+          1678867200,
+          1.00514
+        ],
+        [
+          1678870800,
+          1.00541
+        ],
+        [
+          1678874400,
+          1.00467
+        ],
+        [
+          1678878000,
+          1.0049
+        ],
+        [
+          1678881600,
+          1.00522
+        ],
+        [
+          1678885200,
+          1.004
+        ],
+        [
+          1678888800,
+          1.00319
+        ],
+        [
+          1678892400,
+          1.00249
+        ],
+        [
+          1678896000,
+          1.00249
+        ],
+        [
+          1678899600,
+          1.00256
+        ],
+        [
+          1678903200,
+          1.00266
+        ],
+        [
+          1678906800,
+          1.00296
+        ],
+        [
+          1678910400,
+          1.00359
+        ],
+        [
+          1678914000,
+          1.00398
+        ],
+        [
+          1678917600,
+          1.00419
+        ],
+        [
+          1678921200,
+          1.00404
+        ]
+      ]
+    },
+    {
+      "product": "USDCUSD",
+      "candles": [
+        [
+          1678233600,
+          1
+        ],
+        [
+          1678237200,
+          1.0001
+        ],
+        [
+          1678240800,
+          1.0001
+        ],
+        [
+          1678244400,
+          1.0001
+        ],
+        [
+          1678248000,
+          1
+        ],
+        [
+          1678251600,
+          1
+        ],
+        [
+          1678255200,
+          0.9999
+        ],
+        [
+          1678258800,
+          1
+        ],
+        [
+          1678262400,
+          0.9999
+        ],
+        [
+          1678266000,
+          0.9998
+        ],
+        [
+          1678269600,
+          1
+        ],
+        [
+          1678273200,
+          0.9999
+        ],
+        [
+          1678276800,
+          0.9998
+        ],
+        [
+          1678280400,
+          0.9995
+        ],
+        [
+          1678284000,
+          1.0001
+        ],
+        [
+          1678287600,
+          1
+        ],
+        [
+          1678291200,
+          1
+        ],
+        [
+          1678294800,
+          0.9997
+        ],
+        [
+          1678298400,
+          0.9999
+        ],
+        [
+          1678302000,
+          1
+        ],
+        [
+          1678305600,
+          1
+        ],
+        [
+          1678309200,
+          1
+        ],
+        [
+          1678312800,
+          1.0001
+        ],
+        [
+          1678316400,
+          1
+        ],
+        [
+          1678320000,
+          1.0001
+        ],
+        [
+          1678323600,
+          1
+        ],
+        [
+          1678327200,
+          1
+        ],
+        [
+          1678330800,
+          1
+        ],
+        [
+          1678334400,
+          1
+        ],
+        [
+          1678338000,
+          1.0001
+        ],
+        [
+          1678341600,
+          0.9999
+        ],
+        [
+          1678345200,
+          0.999
+        ],
+        [
+          1678348800,
+          0.9998
+        ],
+        [
+          1678352400,
+          0.9997
+        ],
+        [
+          1678356000,
+          0.9995
+        ],
+        [
+          1678359600,
+          0.9995
+        ],
+        [
+          1678363200,
+          0.9995
+        ],
+        [
+          1678366800,
+          0.9991
+        ],
+        [
+          1678370400,
+          0.9994
+        ],
+        [
+          1678374000,
+          0.9994
+        ],
+        [
+          1678377600,
+          0.9994
+        ],
+        [
+          1678381200,
+          0.9995
+        ],
+        [
+          1678384800,
+          0.9993
+        ],
+        [
+          1678388400,
+          0.9995
+        ],
+        [
+          1678392000,
+          0.9999
+        ],
+        [
+          1678395600,
+          1.0001
+        ],
+        [
+          1678399200,
+          1.0002
+        ],
+        [
+          1678402800,
+          1.0002
+        ],
+        [
+          1678406400,
+          1.0001
+        ],
+        [
+          1678410000,
+          1.0001
+        ],
+        [
+          1678413600,
+          1
+        ],
+        [
+          1678417200,
+          1
+        ],
+        [
+          1678420800,
+          1.0001
+        ],
+        [
+          1678424400,
+          1.0001
+        ],
+        [
+          1678428000,
+          1.0001
+        ],
+        [
+          1678431600,
+          1
+        ],
+        [
+          1678435200,
+          1
+        ],
+        [
+          1678438800,
+          1.0001
+        ],
+        [
+          1678442400,
+          1.0001
+        ],
+        [
+          1678446000,
+          1.0001
+        ],
+        [
+          1678449600,
+          1.0001
+        ],
+        [
+          1678453200,
+          1
+        ],
+        [
+          1678456800,
+          1
+        ],
+        [
+          1678460400,
+          1
+        ],
+        [
+          1678464000,
+          0.9999
+        ],
+        [
+          1678467600,
+          0.9999
+        ],
+        [
+          1678471200,
+          1
+        ],
+        [
+          1678474800,
+          1
+        ],
+        [
+          1678478400,
+          0.9997
+        ],
+        [
+          1678482000,
+          0.9994
+        ],
+        [
+          1678485600,
+          0.9996
+        ],
+        [
+          1678489200,
+          0.9998
+        ],
+        [
+          1678492800,
+          0.9996
+        ],
+        [
+          1678496400,
+          0.9996
+        ],
+        [
+          1678500000,
+          0.9998
+        ],
+        [
+          1678503600,
+          0.9968
+        ],
+        [
+          1678507200,
+          0.9578
+        ],
+        [
+          1678510800,
+          0.9595
+        ],
+        [
+          1678514400,
+          0.9841
+        ],
+        [
+          1678518000,
+          0.8772
+        ],
+        [
+          1678521600,
+          0.9104
+        ],
+        [
+          1678525200,
+          0.9099
+        ],
+        [
+          1678528800,
+          0.9105
+        ],
+        [
+          1678532400,
+          0.9093
+        ],
+        [
+          1678536000,
+          0.91
+        ],
+        [
+          1678539600,
+          0.8956
+        ],
+        [
+          1678543200,
+          0.9164
+        ],
+        [
+          1678546800,
+          0.9169
+        ],
+        [
+          1678550400,
+          0.9244
+        ],
+        [
+          1678554000,
+          0.9433
+        ],
+        [
+          1678557600,
+          0.9575
+        ],
+        [
+          1678561200,
+          0.9529
+        ],
+        [
+          1678564800,
+          0.9779
+        ],
+        [
+          1678568400,
+          0.9613
+        ],
+        [
+          1678572000,
+          0.956
+        ],
+        [
+          1678575600,
+          0.9638
+        ],
+        [
+          1678579200,
+          0.9671
+        ],
+        [
+          1678582800,
+          0.9765
+        ],
+        [
+          1678586400,
+          0.9764
+        ],
+        [
+          1678590000,
+          0.9796
+        ],
+        [
+          1678593600,
+          0.9712
+        ],
+        [
+          1678597200,
+          0.9613
+        ],
+        [
+          1678600800,
+          0.9559
+        ],
+        [
+          1678604400,
+          0.9479
+        ],
+        [
+          1678608000,
+          0.9509
+        ],
+        [
+          1678611600,
+          0.9574
+        ],
+        [
+          1678615200,
+          0.9589
+        ],
+        [
+          1678618800,
+          0.958
+        ],
+        [
+          1678622400,
+          0.9568
+        ],
+        [
+          1678626000,
+          0.9608
+        ],
+        [
+          1678629600,
+          0.9569
+        ],
+        [
+          1678633200,
+          0.9597
+        ],
+        [
+          1678636800,
+          0.9585
+        ],
+        [
+          1678640400,
+          0.9635
+        ],
+        [
+          1678644000,
+          0.9684
+        ],
+        [
+          1678647600,
+          0.9658
+        ],
+        [
+          1678651200,
+          0.97
+        ],
+        [
+          1678654800,
+          0.9634
+        ],
+        [
+          1678658400,
+          0.9806
+        ],
+        [
+          1678662000,
+          0.9871
+        ],
+        [
+          1678665600,
+          0.9947
+        ],
+        [
+          1678669200,
+          0.9945
+        ],
+        [
+          1678672800,
+          0.9949
+        ],
+        [
+          1678676400,
+          0.99
+        ],
+        [
+          1678680000,
+          0.9896
+        ],
+        [
+          1678683600,
+          0.991
+        ],
+        [
+          1678687200,
+          0.9907
+        ],
+        [
+          1678690800,
+          0.9911
+        ],
+        [
+          1678694400,
+          0.9898
+        ],
+        [
+          1678698000,
+          0.9898
+        ],
+        [
+          1678701600,
+          0.989
+        ],
+        [
+          1678705200,
+          0.9888
+        ],
+        [
+          1678708800,
+          0.9897
+        ],
+        [
+          1678712400,
+          0.9908
+        ],
+        [
+          1678716000,
+          0.9938
+        ],
+        [
+          1678719600,
+          0.9905
+        ],
+        [
+          1678723200,
+          0.9897
+        ],
+        [
+          1678726800,
+          0.9944
+        ],
+        [
+          1678730400,
+          0.995
+        ],
+        [
+          1678734000,
+          0.9958
+        ],
+        [
+          1678737600,
+          0.9958
+        ],
+        [
+          1678741200,
+          0.9958
+        ],
+        [
+          1678744800,
+          0.997
+        ],
+        [
+          1678748400,
+          0.9996
+        ],
+        [
+          1678752000,
+          0.9953
+        ],
+        [
+          1678755600,
+          0.9951
+        ],
+        [
+          1678759200,
+          0.9954
+        ],
+        [
+          1678762800,
+          0.9986
+        ],
+        [
+          1678766400,
+          0.9977
+        ],
+        [
+          1678770000,
+          0.9967
+        ],
+        [
+          1678773600,
+          0.9971
+        ],
+        [
+          1678777200,
+          0.9988
+        ],
+        [
+          1678780800,
+          0.9989
+        ],
+        [
+          1678784400,
+          0.9987
+        ],
+        [
+          1678788000,
+          0.9989
+        ],
+        [
+          1678791600,
+          0.9989
+        ],
+        [
+          1678795200,
+          0.9986
+        ],
+        [
+          1678798800,
+          0.9956
+        ],
+        [
+          1678802400,
+          0.9974
+        ],
+        [
+          1678806000,
+          0.9987
+        ],
+        [
+          1678809600,
+          0.9991
+        ],
+        [
+          1678813200,
+          0.9989
+        ],
+        [
+          1678816800,
+          0.9988
+        ],
+        [
+          1678820400,
+          0.9965
+        ],
+        [
+          1678824000,
+          0.9964
+        ],
+        [
+          1678827600,
+          0.9973
+        ],
+        [
+          1678831200,
+          0.9963
+        ],
+        [
+          1678834800,
+          0.997
+        ],
+        [
+          1678838400,
+          0.9994
+        ],
+        [
+          1678842000,
+          0.9994
+        ],
+        [
+          1678845600,
+          0.9994
+        ],
+        [
+          1678849200,
+          0.9986
+        ],
+        [
+          1678852800,
+          0.9999
+        ],
+        [
+          1678856400,
+          0.9991
+        ],
+        [
+          1678860000,
+          1
+        ],
+        [
+          1678863600,
+          1
+        ],
+        [
+          1678867200,
+          0.9994
+        ],
+        [
+          1678870800,
+          1
+        ],
+        [
+          1678874400,
+          0.9994
+        ],
+        [
+          1678878000,
+          0.9994
+        ],
+        [
+          1678881600,
+          0.9999
+        ],
+        [
+          1678885200,
+          0.9994
+        ],
+        [
+          1678888800,
+          0.9995
+        ],
+        [
+          1678892400,
+          0.9994
+        ],
+        [
+          1678896000,
+          0.9988
+        ],
+        [
+          1678899600,
+          0.9996
+        ],
+        [
+          1678903200,
+          0.9994
+        ],
+        [
+          1678906800,
+          0.9999
+        ],
+        [
+          1678910400,
+          0.9996
+        ],
+        [
+          1678914000,
+          0.9999
+        ],
+        [
+          1678917600,
+          0.9995
+        ],
+        [
+          1678921200,
+          0.998
+        ]
+      ]
+    }
+  ],
+  "conclusion": "Experimental price-risk baseline and a frozen protective rule. Counterfactuals do not prove historical vault executions or general exploit forecasting. Failed forecasts and exits that lose money after recovery remain in the report."
+}

@@ -4,7 +4,15 @@ The application runs one local Node HTTP server and a buildless SVG/JavaScript f
 
 ## Automatic observational assessment
 
-`src/live/assess.ts` powers `POST /api/assess` and the dashboard's amount-only dependency-check form. It measures verified market concentration, deduplicates shared components and checks oracle rounds at the snapshot anchor. Missing/stale anchors, inconsistent accounting, duplicate paths and unverified observations withhold unsupported results. Oracle age does not establish staleness without feed-specific heartbeat policy. Forecasts remain explicitly unavailable; no reallocation or execution is fabricated. Manual scenarios are under an advanced view. See [the updated forecasting/reallocation target](AUTOMATION_AND_REALLOCATION.md).
+`src/live/assess.ts` measures verified market concentration, deduplicates shared components and checks oracle rounds at the snapshot anchor. `src/live/forecast.ts` adds live fiat-USD price data and explicitly experimental regime forecasts to `POST /api/assess`. Missing/stale anchors, inconsistent accounting and unverified observations withhold unsupported measurements. Oracle age does not establish staleness without feed-specific heartbeat policy. Model provenance, support and execution ineligibility remain explicit; no generic exploit probability or lender haircut is invented. Manual scenarios remain under an advanced view.
+
+`src/forecast` validates closed-hour data, defines historical labels, fits empirical regime frequencies and evaluates chronological forecasts and a separate frozen protective rule. `datasets/PROTOCOL.json` fixes train/validation/test windows and parameters; `scripts/download-history.mjs` retrieves actual candles and hash provenance; `scripts/backtest.mjs` builds `models/depeg-v1.json` and an auditable report. See [benchmark interpretation](BENCHMARK_RESULTS.md).
+
+`src/automation/allocation.ts` computes a minimum partial migration under explicit market/collateral limits, grouping shared factors and checking compatible/fresh capital accounting. This is a concentration objective, not expected-loss optimization. `scripts/automation-service.mjs` runs bounded sequential vault refreshes, live prices, proposals and change alerts, with optional five-minute monitoring and persisted local reports. It permits one opted-in automatic local-fork rehearsal per setup; an underlying depeg blocks same-token rehearsal.
+
+`contracts/ForkPolicyMigrator.sol` enforces an atomic fixed-route, fixed-recipient migration with executor, amount/cumulative, expiry, cooldown, revocation and output constraints. It refuses deployment outside chain 31337. `scripts/fork-migration.mjs` owns the Anvil process and its execution transport, validates policy, tests rejection cases and checks balances/allowances after migration. Only the remote public client reads mainnet. Fork-only permissions and impersonation are not production wallet delegation.
+
+`src/automation/force-route.ts` handles verified direct Morpho V2 market withdrawals when the source has no default liquidity adapter and insufficient idle funds. Fixed adapter/market identity, available liquidity, route amount and penalty limits are checked; the atomic contract counts penalty shares toward spending limits. Other vaults use actual direct-redemption simulation. Dollar sizing uses fresh asset prices, and fork gas pricing includes the pinned block's base-fee floor.
 
 ## Files and responsibilities
 
@@ -27,7 +35,12 @@ All routes are under the local loopback host. Keys and upstream credential URLs 
 | `GET /api/catalogue?chainId=1&version=1&cursor=...` | Paginated listed-vault directory from Morpho |
 | `POST /api/inspect` | `{selector:"1:0x...",enrichment?:true}` → job ID |
 | `GET /api/jobs/<id>` | running, failed, or complete with graph/scenario report |
-| `POST /api/assess` | `{snapshotId,positionUsd:number\|null}` → automatic observational checks; forecasts unavailable, no execution |
+| `POST /api/assess` | `{snapshotId,positionUsd:number\|null}` → observations and experimental live stablecoin price forecasts |
+| `POST /api/automation` | `{selector,positionUsd,destinations,policy?,monitor?,intervalSeconds?,forkDemoOwner?}` → automatic comparison/monitor ID; one opted-in local-fork rehearsal maximum |
+| `GET /api/automation/<id>` | Current cycle, source/destination snapshots, forecasts, proposal, alerts and optional fork proof |
+| `POST /api/automation/stop` | `{id}` → stop scheduling and prevent later rehearsal |
+| `POST /api/fork-migration` | `{sourceSnapshotId,destinationSnapshotId,owner,positionUsd,moveFraction}` → isolated atomic fork job; no caller-selected execution RPC |
+| `GET /api/backtest` | Frozen protocol, attributed series metadata, forecast scores, price counterfactuals and chart points |
 | `POST /api/simulate` | Snapshot ID, typed target/scenario, severity/horizon, optional assumed size/probability/cost, optional matching quote ID |
 | `POST /api/quote-exit` | Snapshot ID, public owner address, optional raw shares → direct-redemption assessment and quote ID |
 | `POST /api/public-holder` | Live Morpho snapshot ID → indexed example holder verified with current balance/code reads; bounded to 20 candidates |
@@ -53,6 +66,12 @@ For PT collateral in a supported Morpho graph, the public Pendle directory ident
 SY `assetInfo()` is stored as a reference denomination observation, because it can refer to another chain or an approximate accounting asset. It is not automatically a backing edge. ABI-derived generic references remain `USES_CONTRACT` with unresolved economic semantics. The five category cards can be partial even when graph nodes for each layer exist.
 
 ## Financial models and exit limits
+
+V2 adapter and position pages now follow verified GraphQL `skip` arguments in batches of 20, with limits of 32 adapters and 200 indexed positions per adapter. Repeated identities, shifted counts, empty/incomplete pages and failures preserve the original partial data with explicit traversal blockers; no fabricated entries or completeness. The Hyperithm mHYPER regression retrieves 37 positions and reconciles them against fresh contract accounting.
+
+The optional 60-node contract scan records an `enrichment` limitation rather than a capital-discovery `traversal` error. It cannot invalidate independently reconciled direct-market accounting merely by stopping additional source/oracle inspection. Missing capital pages, inconsistent balances and incomplete affected-path traversal still block numeric estimates. Other graph layers remain visibly partial; this is not an overall risk clearance.
+
+`stressTest` explicitly distinguishes a calculated hypothetical result, a missing size, blocked data and an unavailable loss model. The viewer presents that result before the separate actual-withdrawal check. A typed assumed cost never becomes a checked quote. Exposure controls use plain language (**Show my exposure**) and explain that they use the last inspection's observations. The refresh-and-retry action preserves scenario settings while obtaining a new graph and clears prior quote selection; a removed target cannot silently switch to a different market.
 
 Supported numerical stresses are V1 market lender loss, reconciled V2 direct-market lender loss and an explicit assumed net shareholder haircut at the root vault. None predicts an incident. Other scenarios return affected paths, mechanism explanations and, where accounting supports it, unique affected exposure; exposure is not loss. `sensitivity` reports expected loss, an assumed-cost comparison and break-even probability separately from the checked decision. `decisionRequirements` explains missing model, size, probability, full exit, freshness and pricing inputs. The UI also displays the market allocation calculation.
 

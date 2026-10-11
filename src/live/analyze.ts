@@ -113,6 +113,12 @@ export function analyzeLive(snapshot: LiveSnapshot, scenario: Scenario, context:
   }
   const hypotheticalExpectedLoss = loss !== null && p !== undefined ? loss * p : null;
   return { snapshot, scenario, incident, mechanisms, decision, exposureUsd, positionUsd: size, exit: exit ?? null, blockers, decisionRequirements,
+    stressTest: {
+      status: loss !== null ? 'CALCULATED' : size === null ? 'MISSING_POSITION_VALUE' : blockers.length ? 'BLOCKED_BY_DATA' : 'LOSS_MODEL_UNAVAILABLE',
+      conditionalLossUsd: loss, expectedLossUsd: hypotheticalExpectedLoss, assumedExitCostUsd: assumedCost ?? null,
+      breakEvenProbability: loss !== null && loss > 0 && assumedCost != null ? assumedCost / loss : null,
+      comparison: hypotheticalExpectedLoss === null || assumedCost == null ? null : hypotheticalExpectedLoss > assumedCost ? 'EXIT_COST_LOWER' : hypotheticalExpectedLoss < assumedCost ? 'STAY_COST_LOWER' : 'EQUAL_COST'
+    },
     sensitivity: loss !== null && loss > 0 && assumedCost != null ? { label: 'Assumptions-only comparison; exit feasibility has not been established by these inputs', assumedExitCostUsd: assumedCost, expectedLossUsd: hypotheticalExpectedLoss, breakEvenProbability: assumedCost / loss,
       comparison: hypotheticalExpectedLoss === null ? null : hypotheticalExpectedLoss > assumedCost ? 'EXIT_COST_LOWER' : hypotheticalExpectedLoss < assumedCost ? 'STAY_COST_LOWER' : 'EQUAL_COST' } : null,
     warning: `${replay ? 'HISTORICAL RECORDING' : 'LIVE DEPENDENCIES'} · HYPOTHETICAL FAILURE · Size is user-assumed unless established by a checked balance/reference valuation; event probability is an explicit assumption. No trades are executed.` };

@@ -1,0 +1,165 @@
+{
+  "status": "FORK_SIMULATION_PASSED",
+  "mode": "LOCAL_FORK_ONLY",
+  "sourceChainId": 1,
+  "executionChainId": 31337,
+  "source": "0x093272c07700d3ca5301c3bf9b3a392624179e2f",
+  "destination": "0x04422053aDDbc9bB2759b248B574e3FCA76Bc145",
+  "owner": "0x681b072b7555c4c57a12eec8e90a2914ee733816",
+  "sourceBlock": "26167129",
+  "sourceBlockHash": "0xea409a2ef18f17f41ef0cf211e073fca200e4ecebf89aa1b57206b60b1875367",
+  "simulatedAt": "2026-10-11T05:30:56.293Z",
+  "expiresAt": "2026-10-11T05:31:56.293Z",
+  "sharesRedeemed": "4862639223640761296426",
+  "assetsReceived": "5171414375",
+  "destinationSharesIssued": "4875910291302496959058",
+  "destinationAssets": "5171414374",
+  "totalSharesDebited": "4862687698510822769565",
+  "routePenaltyShares": "48474870061473139",
+  "liquidityRoute": {
+    "kind": "MORPHO_V2_PERMISSIONLESS_FORCE_DEALLOCATE_THEN_REDEEM",
+    "idleAssets": "16116791",
+    "deficitAssets": "5155297539",
+    "maximumPenaltyAssets": "51560",
+    "legs": [
+      {
+        "adapter": "0x92872B97d89B54646D036E3aFd2BcCb84d8e3CA1",
+        "data": "0x000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000ecfafdc7741323a945a163ed068b5a3c43483957000000000000000000000000217d6ddcdb95112c51657f6270e8c079cfdb51f0000000000000000000000000870ac11d48b15db9a138cf899d20f13f79ba00bc0000000000000000000000000000000000000000000000000cb2bba6f17b8000",
+        "maxAssets": "5155813078",
+        "maxPenaltyWad": "10000000000000",
+        "marketId": "0x1e9d614631a7df0ec07fb05b2c8cb2491575fd1a63a33bf187a6afb295a4fc64"
+      }
+    ]
+  },
+  "permission": {
+    "mode": "local_fork_only",
+    "destinations": [
+      "0x04422053aDDbc9bB2759b248B574e3FCA76Bc145"
+    ],
+    "maxSharesPerMove": "4862687714496214209645",
+    "authorization": "LOCAL_FORK_POLICY_ONLY_NO_WALLET_SIGNATURE"
+  },
+  "intent": {
+    "chainId": 1,
+    "source": "0x093272c07700d3ca5301c3bf9b3a392624179e2f",
+    "destination": "0x04422053aDDbc9bB2759b248B574e3FCA76Bc145",
+    "asset": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "owner": "0x681b072b7555c4c57a12eec8e90a2914ee733816",
+    "receiver": "0x681b072b7555c4c57a12eec8e90a2914ee733816",
+    "shares": "4862687714496214209645",
+    "minAssets": "5145557258",
+    "minDestinationShares": "4851530739042479966556",
+    "createdAt": "2026-10-11T05:30:54.765Z",
+    "expiresAt": "2026-10-11T05:31:54.765Z"
+  },
+  "migrator": "0x5dfa5390cbbfec8e2a52bcd9055d51743087dbb7",
+  "executor": "0x000000000000000000000000000000000000cafe",
+  "contractSourceSha256": "c00a771a804f4a51a8d67161da3f0ea807252f764d3ff5bf75ced8be81bc688b",
+  "atomicMigration": true,
+  "boundaryTests": [
+    {
+      "name": "Unauthorized caller",
+      "passed": true
+    },
+    {
+      "name": "Per-move amount bound",
+      "passed": true
+    },
+    {
+      "name": "Output floor and atomic rollback",
+      "passed": true
+    },
+    {
+      "name": "Revoked permission",
+      "passed": true
+    },
+    {
+      "name": "Expired permission",
+      "passed": true
+    },
+    {
+      "name": "Revoked token allowance",
+      "passed": true
+    },
+    {
+      "name": "Cumulative limit / duplicate execution",
+      "passed": true
+    }
+  ],
+  "receipts": [
+    {
+      "operation": "deploy_fork_policy",
+      "hash": "0x3555f67bb40842bbea443d1674f25bf3c4109ba05bfd00ab04da10278a3798bf",
+      "gasUsed": "1839996",
+      "effectiveGasPriceWei": "66140160",
+      "gasWei": "121697629839360"
+    },
+    {
+      "operation": "one_time_share_permission",
+      "hash": "0xace541af81993fa3238833c3aa93de01d6bf12e1481d814ffc1b26f540c79dcc",
+      "gasUsed": "46008",
+      "effectiveGasPriceWei": "66140160",
+      "gasWei": "3042976481280"
+    },
+    {
+      "operation": "atomic_redeem_and_deposit",
+      "hash": "0xfdb547bcc334c6b917e70451642dbe272e84be43535dc9b86c78c0840e8fcc79",
+      "gasUsed": "1291461",
+      "effectiveGasPriceWei": "66140160",
+      "gasWei": "85417437173760"
+    }
+  ],
+  "totalGasWei": "210158043494400",
+  "executionGasWei": "85417437173760",
+  "gasPriceReference": {
+    "currentMainnetGasPriceWei": "66140160",
+    "forkBaseFeeWei": "66140160",
+    "appliedGasPriceWei": "66140160",
+    "source": "Fresh eth_gasPrice with a pinned-fork base-fee floor"
+  },
+  "asset": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  "assetDecimals": 6,
+  "underlyingAmount": "5171.414375",
+  "nativePrice": {
+    "usd": 2505.8246909437653,
+    "timestamp": "1791696537",
+    "source": "https://api.morpho.org/graphql",
+    "retrievedAt": "2026-10-11T05:30:56.291Z"
+  },
+  "assetPrice": {
+    "usd": 0.9997071730088601,
+    "timestamp": "1791696242",
+    "source": "https://api.morpho.org/graphql",
+    "retrievedAt": "2026-10-11T05:30:51.596Z"
+  },
+  "sizing": {
+    "source": "USER_USD_SIZE_CONVERTED_WITH_FRESH_REFERENCE_PRICE",
+    "positionUsd": 10000,
+    "moveFraction": 0.51699
+  },
+  "costs": {
+    "kind": "FORK_STATE_MEASUREMENT_WITH_REFERENCE_PRICES",
+    "totalGasUsd": 0.5266192143887013,
+    "executionGasUsd": 0.21404112310714565,
+    "setupGasUsd": 0.31257809128155567,
+    "roundingFrictionUsd": 9.997071730088602e-7,
+    "forcePenaltyUsd": 0.05153790389012577
+  },
+  "costUsd": 0.5781581179860001,
+  "invariants": {
+    "sharesDebitedExactly": true,
+    "outputsAboveFloor": true,
+    "underlyingBalancePreserved": true,
+    "allowanceCleared": true,
+    "recipientMatched": true,
+    "anchorUnchanged": true
+  },
+  "mainnetTransactionsSent": 0,
+  "caveats": [
+    "Fork-only contract enforces sender, fixed source/destination/receiver, amounts, output floors, expiry, cooldown and revocation. It refuses deployment outside chain 31337.",
+    "Owner impersonation and local ETH gas funding do not establish real signing authority.",
+    "Gas is measured on the fork at a freshly read mainnet gas price; setup costs are separate from subsequent execution. No dollar quote without a fresh native USD reference.",
+    "No swap: both vaults retain the same underlying and its issuer/depeg risk."
+  ],
+  "recordingNotice": "HISTORICAL LOCAL-FORK EXECUTION RECORD: original timestamps and state; no current feasibility claim. Mainnet transactions sent: zero."
+}

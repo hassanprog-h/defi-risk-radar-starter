@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 import { createViewerServer } from './viewer-server.mjs';
 
@@ -13,15 +13,17 @@ try {
   page.setDefaultTimeout(180000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  let live;
-  page.on('response', async response => {
-    if (response.url().includes('/api/jobs/')) {
-      try { const body = await response.json(); if (body.status === 'complete') live = body.report; } catch {}
-    }
+  // Match the requested vault explicitly; a response listener can lag behind the DOM or a later job.
+  const inspectionResponse = address => page.waitForResponse(async response => {
+    if (!response.url().includes('/api/jobs/')) return false;
+    const body = await response.json();
+    return body.status === 'complete' && body.report?.snapshot.rootPositionId === `eip155:1:${address.toLowerCase()}`;
   });
+  const firstInspection = inspectionResponse('0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB');
   await page.goto(base);
+  let live = (await (await firstInspection).json()).report;
+  console.log('Live V1 inspection complete.');
   await page.waitForFunction(() => document.getElementById('mode-badge').textContent === 'LIVE SNAPSHOT' && document.querySelectorAll('g.node').length > 20 && !document.getElementById('inspect').disabled);
-  for (let attempt = 0; !live && attempt < 20; attempt++) await page.waitForTimeout(100);
   assert.ok(live.snapshot.nodes.length > 20);
   assert.equal(await page.locator('g.node').count(), live.snapshot.nodes.length);
   assert.equal(await page.locator('g.edge-group').count(), live.snapshot.edges.length);
@@ -36,7 +38,8 @@ try {
   assert.equal(assessment.forecast.probabilityWithinHorizon, null);
   assert.equal(assessment.allocation.executionEnabled, false);
   await page.waitForFunction(() => !document.getElementById('assess').disabled);
-  assert.match(await page.locator('#assessment-result').innerText(), /calibrated forecasting model/);
+  assert.match(await page.locator('#assessment-result').innerText(), /not money lost/);
+  assert.equal(await page.locator('#assess').innerText(), 'Show my exposure');
   await page.locator('#advanced-scenario > summary').click();
   for (const secret of [process.env.ETHERSCAN_API_KEY, process.env.ETHEREUM_RPC_URL]) {
     if (secret) assert.equal(JSON.stringify(live).includes(secret), false, 'Credentials must not appear in the live report');
@@ -71,13 +74,15 @@ try {
   await page.locator('#simulate').click();
   await page.waitForFunction(() => document.getElementById('simulate').disabled === false);
   assert.match(await page.locator('#result').innerText(), /INSUFFICIENT EVIDENCE/);
-  assert.equal((await page.locator('#result').innerText()).includes('Conditional additional loss\nUnknown'), false);
+  assert.match(await page.locator('#result').innerText(), /Scenario calculated/);
   const saved = JSON.parse(await readFile(new URL('../fixtures/recordings/steakhouse-usdc.json', import.meta.url)));
   const malformed = { ...saved, edges: [{ ...saved.edges[0], to: 'missing' }] };
   const invalidRecording = await fetch(base + '/api/replay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(malformed) });
   assert.equal(invalidRecording.status, 400);
   await page.locator('#example').selectOption('1:0x04422053aDDbc9bB2759b248B574e3FCA76Bc145');
+  const v2Inspection = inspectionResponse('0x04422053aDDbc9bB2759b248B574e3FCA76Bc145');
   await page.locator('#inspect').click();
+  live = (await (await v2Inspection).json()).report;
   await page.waitForFunction(() => document.getElementById('mode-badge').textContent === 'LIVE SNAPSHOT' && !document.getElementById('inspect').disabled);
   assert.equal(live.snapshot.protocol, 'Morpho Vault V2');
   assert.ok(live.snapshot.nodes.some(node => node.kind === 'amm'));
@@ -94,7 +99,7 @@ try {
   await page.waitForFunction(() => !document.getElementById('simulate').disabled);
   assert.equal(simulated.incident.incrementalLossIfStayingUsd, 10000 * v2Exposure.fraction * .2);
   assert.match(await page.locator('.sensitivity-card').innerText(), /Staying has lower modelled cost/);
-  assert.match(await page.locator('.requirements-card').innerText(), /No real redemption has been checked/);
+  assert.match(await page.locator('#decision-requirements').innerText(), /No real redemption has been checked/);
   const holderResponse = page.waitForResponse(r => r.url().endsWith('/api/public-holder'));
   await page.locator('#find-holder').click();
   const holder = await (await holderResponse).json();
@@ -122,6 +127,83 @@ try {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2), 'Live mobile layout must not overflow');
   await page.setViewportSize({ width: 1600, height: 1050 });
   await page.screenshot({ path: '/tmp/defi-risk-radar-v2.png', fullPage: true });
+  // User-reported failure: Hyperithm's adapter has more than one page of markets.
+  await page.locator('#vault-address').fill('0x093272c07700d3ca5301c3bf9b3a392624179e2f');
+  const hyperInspection = inspectionResponse('0x093272c07700d3ca5301c3bf9b3a392624179e2f');
+  await page.locator('#inspect').click();
+  live = (await (await hyperInspection).json()).report;
+  await page.waitForFunction(() => !document.getElementById('inspect').disabled && document.querySelectorAll('#target option').length > 20);
+  assert.ok(live.snapshot.observations.some(o => o.metric === 'accountingPinned' && o.value === true));
+  const hyperExposure = live.snapshot.exposures.find(e => live.snapshot.nodes.find(n => n.id === e.marketId)?.label === 'USDC / mHYPER market');
+  assert.ok(hyperExposure);
+  await page.locator('#kind').selectOption('MARKET_LOSS');
+  await page.locator('#target').selectOption(hyperExposure.marketId);
+  await page.locator('#position-usd').fill('10000');
+  await page.locator('#probability').fill('25');
+  await page.locator('#exit-cost').fill('300');
+  const hyperResponse = page.waitForResponse(r => r.url().endsWith('/api/simulate'));
+  await page.locator('#simulate').click();
+  const hyperReport = await (await hyperResponse).json();
+  await writeFile('/tmp/radar-hyper-browser-report.json', JSON.stringify(hyperReport, null, 2));
+  await page.waitForFunction(() => !document.getElementById('simulate').disabled);
+  assert.equal(hyperReport.stressTest.status, 'CALCULATED', JSON.stringify(hyperReport.blockers));
+  assert.equal(hyperReport.incident.incrementalLossIfStayingUsd, 10000 * hyperExposure.fraction * .2);
+  assert.equal(hyperReport.stressTest.expectedLossUsd, hyperReport.incident.incrementalLossIfStayingUsd * .25);
+  assert.equal(hyperReport.decision.action, 'INSUFFICIENT_EVIDENCE');
+  assert.match(await page.locator('#result').innerText(), /Scenario calculated/);
+  assert.match(await page.locator('.sensitivity-card').innerText(), /Staying has lower modelled cost/);
+  assert.match(await page.locator('#result').innerText(), /Not checked/);
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Hyperithm mobile layout must not overflow');
+  await page.setViewportSize({ width: 1600, height: 1050 });
+  await page.screenshot({ path: '/tmp/defi-risk-radar-hyperithm.png', fullPage: true });
+  const hyperHolderResponse = page.waitForResponse(r => r.url().endsWith('/api/public-holder'));
+  await page.locator('#find-holder').click();
+  const hyperHolder = await (await hyperHolderResponse).json();
+  assert.match(hyperHolder.owner, /^0x[0-9a-f]{40}$/);
+  console.log('Live V2 scenarios complete; testing automatic fork migration.');
+  await writeFile('/tmp/radar-browser-holder.json', JSON.stringify({ owner: hyperHolder.owner }));
+  // Full automatic vertical slice: fresh source/destination, price forecast, policy move and bounded atomic fork execution.
+  await page.locator('#assessment-usd').fill('10000');
+  await page.locator('#fork-panel > summary').click();
+  await page.locator('#fork-owner').fill(hyperHolder.owner);
+  await page.locator('#auto-fork').check();
+  const automationStarted = page.waitForResponse(r => r.url().endsWith('/api/automation') && r.request().method() === 'POST');
+  await page.locator('#compare-destinations').click();
+  const automationJob = await (await automationStarted).json();
+  const automationComplete = await page.waitForResponse(async r => {
+    if (!r.url().endsWith(`/api/automation/${automationJob.id}`)) return false;
+    const body = await r.json(); return body.status === 'complete' || body.status === 'failed';
+  });
+  const automatic = await automationComplete.json();
+  assert.equal(automatic.status, 'complete', automatic.error);
+  await writeFile('/tmp/radar-browser-automation.json', JSON.stringify(automatic.result, null, 2));
+  assert.equal(automatic.result.allocation.status, 'MIGRATION_PROPOSED');
+  assert.ok(automatic.result.allocation.selected.moveFraction > 0 && automatic.result.allocation.selected.moveFraction <= 1);
+  assert.equal(automatic.result.fork.status, 'FORK_SIMULATION_PASSED', automatic.result.fork.error);
+  assert.equal(automatic.result.fork.atomicMigration, true);
+  assert.equal(automatic.result.fork.mainnetTransactionsSent, 0);
+  assert.ok(automatic.result.fork.boundaryTests.length >= 7);
+  assert.ok(automatic.result.assessment.forecasts.some(f => f.status === 'EXPERIMENTAL_REFERENCE'));
+  assert.ok(automatic.result.assessment.forecasts.every(f => !f.validatedForLiveExecution));
+  console.log('Automatic migration and permission checks passed.');
+  for (const secret of [process.env.ETHERSCAN_API_KEY, process.env.ETHEREUM_RPC_URL]) if (secret) assert.equal(JSON.stringify(automatic).includes(secret), false);
+  await page.waitForFunction(() => document.getElementById('automation-result').textContent.includes('FORK SIMULATION PASSED'));
+  await page.locator('#auto-fork').uncheck();
+  await page.locator('#load-backtest').click();
+  await page.waitForFunction(() => document.querySelector('#backtest-result table') !== null);
+  assert.match(await page.locator('#backtest-result').innerText(), /Model underperformed the baseline/);
+  assert.ok(await page.locator('.backtest-chart').isVisible());
+  const curve = page.locator('#backtest-result button[aria-pressed]').first();
+  await curve.click(); assert.equal(await curve.getAttribute('aria-pressed'), 'false');
+  await page.screenshot({ path: '/tmp/defi-risk-radar-automation.png', fullPage: true });
+  const monitorStarted = page.waitForResponse(r => r.url().endsWith('/api/automation') && r.request().method() === 'POST');
+  await page.locator('#start-monitor').click(); const monitorJob = await (await monitorStarted).json();
+  assert.equal(monitorJob.monitor, true);
+  await page.locator('#stop-monitor').click();
+  await page.waitForFunction(() => document.getElementById('stop-monitor').disabled);
+  const monitorState = await (await fetch(`${base}/api/automation/${monitorJob.id}`)).json();
+  assert.equal(monitorState.stopped, true); assert.equal(monitorState.nextAt, null);
   const fixtureLoaded = page.waitForResponse(response => response.url().endsWith('/api/demo'));
   await page.locator('#fixture').click(); await fixtureLoaded;
   await page.waitForFunction(() => document.getElementById('mode-badge').textContent === 'FIXTURE DEMO');
@@ -139,7 +221,7 @@ try {
   const missing = await fetch(base + '/.env'); assert.equal(missing.status, 404);
   const crossOrigin = await fetch(base + '/api/inspect', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://example.com' }, body: '{}' });
   assert.equal(crossOrigin.status, 403);
-  console.log(JSON.stringify({ browser: 'passed', liveNodes: live.snapshot.nodes.length, liveEdges: live.snapshot.edges.length, scenarios: ['market_loss', 'oracle_stale', 'chain_outage'], replay: 'passed', fixtureNodes: 9, responsive: 'passed', screenshots: ['/tmp/defi-risk-radar-live.png', '/tmp/defi-risk-radar-mobile.png'] }, null, 2));
+  console.log(JSON.stringify({ browser: 'passed', liveNodes: live.snapshot.nodes.length, liveEdges: live.snapshot.edges.length, automation: 'passed', atomicForkMigration: 'passed', monitoringStop: 'passed', historicalEvaluation: 'passed', scenarios: ['market_loss', 'oracle_stale', 'chain_outage'], replay: 'passed', fixtureNodes: 9, responsive: 'passed', screenshots: ['/tmp/defi-risk-radar-live.png', '/tmp/defi-risk-radar-automation.png', '/tmp/defi-risk-radar-mobile.png'] }, null, 2));
 } finally {
   await browser?.close();
   await new Promise(resolve => server.close(resolve));

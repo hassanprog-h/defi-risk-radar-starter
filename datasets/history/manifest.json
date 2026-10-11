@@ -1,0 +1,134 @@
+{
+  "protocol": {
+    "version": "depeg-benchmark-v1",
+    "frozenBeforeDownload": "2026-10-11",
+    "training": [
+      "2022-04-01T00:00:00Z",
+      "2022-06-01T00:00:00Z"
+    ],
+    "validation": [
+      "2022-06-01T00:00:00Z",
+      "2022-07-01T00:00:00Z"
+    ],
+    "test": [
+      "2023-01-01T00:00:00Z",
+      "2023-04-01T00:00:00Z"
+    ],
+    "secondaryTest": [
+      "2023-06-01T00:00:00Z",
+      "2023-07-01T00:00:00Z"
+    ],
+    "products": [
+      {
+        "provider": "coinbase",
+        "product": "UST-USD",
+        "roles": [
+          "training",
+          "validation"
+        ]
+      },
+      {
+        "provider": "coinbase",
+        "product": "DAI-USD",
+        "roles": [
+          "training",
+          "validation",
+          "test"
+        ]
+      },
+      {
+        "provider": "coinbase",
+        "product": "USDT-USD",
+        "roles": [
+          "training",
+          "validation",
+          "test",
+          "secondaryTest"
+        ]
+      },
+      {
+        "provider": "binance_us",
+        "product": "USDCUSD",
+        "roles": [
+          "training",
+          "validation",
+          "test"
+        ]
+      }
+    ],
+    "forecast": {
+      "horizonHours": 24,
+      "event": "additional 2% drawdown in subsequent hourly closes",
+      "regimes": "PEGGED >=0.995; WATCH <0.995 or hourly return <-0.002; DEPEG <0.99; DISTRESSED <0.95"
+    },
+    "guard": {
+      "rule": "two consecutive closed hours below 0.995 USD with latest close falling",
+      "delayHours": 1,
+      "costBps": [
+        10,
+        30,
+        100
+      ],
+      "end": "end of each test window",
+      "destination": "actual USDT-USD closes (USD cash for USDT source)",
+      "positionUsd": 10000
+    },
+    "limitations": [
+      "Historical snapshots retrieved now, not a vintage-data archive.",
+      "One training collapse is insufficient to calibrate rare incident risk.",
+      "Price-only counterfactual; vault availability, historical liquidity and order fills unverified.",
+      "No parameter changes selected on held-out outcomes."
+    ]
+  },
+  "retrievedAt": "2026-10-11T04:46:40.186Z",
+  "series": [
+    {
+      "provider": "coinbase",
+      "product": "UST-USD",
+      "roles": [
+        "training",
+        "validation"
+      ],
+      "filename": "UST-USD.json",
+      "rows": 1361,
+      "sha256": "8006eb6462107e24b7c6828610696dca853f09f1b976b0169b599a2e2d7a1188"
+    },
+    {
+      "provider": "coinbase",
+      "product": "DAI-USD",
+      "roles": [
+        "training",
+        "validation",
+        "test"
+      ],
+      "filename": "DAI-USD.json",
+      "rows": 4339,
+      "sha256": "4d052cf6bc6d05e7c6b3cc7de01328b2cd29978d019575286ef5ef5b45e7bd43"
+    },
+    {
+      "provider": "coinbase",
+      "product": "USDT-USD",
+      "roles": [
+        "training",
+        "validation",
+        "test",
+        "secondaryTest"
+      ],
+      "filename": "USDT-USD.json",
+      "rows": 5060,
+      "sha256": "6cb7aaf4642d0d8095c351ddcfc0870afe53869b93c1fae846143a605b7c30c0"
+    },
+    {
+      "provider": "binance_us",
+      "product": "USDCUSD",
+      "roles": [
+        "training",
+        "validation",
+        "test"
+      ],
+      "filename": "USDCUSD.json",
+      "rows": 4338,
+      "sha256": "089c4ab4a1e3ea3f1bdff88e2623cd415b94db8054f7dabdc52d7fac0d9889f4"
+    }
+  ]
+}

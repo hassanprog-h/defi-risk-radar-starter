@@ -8,6 +8,7 @@ import { pinV2Accounting } from '../dist/live/accounting.js';
 import { analyzeLive } from '../dist/live/analyze.js';
 import { findPublicHolder } from '../dist/live/holders.js';
 import { loadReplay } from '../dist/live/replay.js';
+import { enrich } from '../dist/live/enrich.js';
 
 const vault = v2Schema.parse(JSON.parse(readFileSync(new URL('../fixtures/upstream/morpho-v2-04422053.json', import.meta.url))).body.data.vaultV2ByAddress);
 const adapter = vault.adapters.items[0], positions = adapter.positions.items;
@@ -55,6 +56,9 @@ test('V2 accounting reconciles all active markets at one block and preserves ind
   assert.equal(result.incident.incrementalLossIfStayingUsd, 10000 * target.fraction * .2);
   assert.equal(result.sensitivity.comparison, 'STAY_COST_LOWER');
   assert.equal(result.decision.action, 'INSUFFICIENT_EVIDENCE');
+  assert.equal(result.stressTest.status, 'CALCULATED');
+  assert.equal(result.stressTest.expectedLossUsd, result.incident.incrementalLossIfStayingUsd * .25);
+  assert.equal(result.stressTest.assumedExitCostUsd, 500);
   assert.ok(result.decisionRequirements.some(r => r.includes('No real redemption')));
   const replayed = analyzeLive(loadReplay(data), result.scenario, { positionUsd: 10000, assumedExitCostUsd: 500 });
   assert.equal(replayed.incident.incrementalLossIfStayingUsd, result.incident.incrementalLossIfStayingUsd);
@@ -81,6 +85,20 @@ test('V2 missing active market, duplicate market, wrong parent, failed read and 
   const missing = structuredClone(vault); missing.adapters.items[0].positions.items = positions.slice(1);
   const { builder, rpc } = await setup();
   assert.equal(await pinV2Accounting(builder, rpc, missing), false);
+});
+test('optional contract enrichment limits do not invalidate independently reconciled capital', async () => {
+  const { builder, rpc } = await setup();
+  assert.equal(await pinV2Accounting(builder, rpc, vault), true);
+  for (let i = 0; i < 61; i++) builder.address('0x' + (i + 1000).toString(16).padStart(40, '0'), 'asset', `Unclassified asset ${i}`);
+  await enrich(builder, { read: async () => { throw new Error('Unsupported getter'); }, storage: async () => undefined });
+  const data = builder.finish();
+  assert.ok(data.unknowns.some(u => u.category === 'enrichment' && u.reason.includes('60-node')));
+  assert.equal(data.coverage.underlying, 'partial');
+  const exposure = data.exposures.find(e => e.fraction > 0);
+  const report = analyzeLive(data, { id: 'verified-capital', kind: 'MARKET_LOSS', targetNodeId: exposure.marketId, severityFraction: .2, horizonHours: 24, probabilityWithinHorizon: .25 }, { positionUsd: 10000, assumedExitCostUsd: 300 });
+  assert.equal(report.stressTest.status, 'CALCULATED');
+  assert.equal(report.incident.incrementalLossIfStayingUsd, 10000 * exposure.fraction * .2);
+  assert.equal(report.decision.action, 'INSUFFICIENT_EVIDENCE', 'Partial enrichment does not establish a checked exit or overall safety');
 });
 test('public holder discovery rejects zero balances and smart wallets, and verifies the selected balance at one block', async () => {
   const { builder } = await setup(), calls = [];

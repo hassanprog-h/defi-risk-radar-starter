@@ -21,15 +21,15 @@ export const vaultFields = `fragment VaultFields on Vault {
 export const v1Query = `query InspectVault($address: String!, $chainId: Int!) {
   vaultByAddress(address: $address, chainId: $chainId) { ...VaultFields }
 } ${vaultFields} ${marketFields}`;
-export const v2Query = `query InspectVaultV2($address: String!, $chainId: Int!) {
+export const v2Query = `query InspectVaultV2($address: String!, $chainId: Int!, $adapterSkip: Int = 0, $positionSkip: Int = 0) {
   vaultV2ByAddress(address: $address, chainId: $chainId) {
     address name symbol listed asset { ${assetFields} }
     chain { id network headBlock { number timestamp } }
     totalAssets totalAssetsUsd totalSupply idleAssets liquidity
     owner { address } curator { address } sentinels { sentinel { address } }
-    adapters(first: 20) { pageInfo { count countTotal } items {
+    adapters(first: 20, skip: $adapterSkip) { pageInfo { count countTotal } items {
       address type assets assetsUsd __typename
-      ... on MorphoMarketV1Adapter { positions(first: 20) { pageInfo { count countTotal } items {
+      ... on MorphoMarketV1Adapter { positions(first: 20, skip: $positionSkip) { pageInfo { count countTotal } items {
         market { ...MarketFields } state { timestamp supplyAssets supplyAssetsUsd supplyShares }
       } } }
       ... on MetaMorphoAdapter { metaMorpho { ...VaultFields } }

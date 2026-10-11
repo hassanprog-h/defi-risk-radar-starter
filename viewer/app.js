@@ -6,6 +6,9 @@ let report;
 let selected;
 let activeQuoteId;
 let assessmentSequence = 0;
+let automationRun;
+let monitorId;
+let automationTimer;
 let zoom = .85;
 let scene = { width: 1200, height: 660 };
 
@@ -15,6 +18,168 @@ function element(tag, text, className) {
   if (className) result.className = className;
   return result;
 }
+
+function renderForecasts(container, forecasts) {
+  container.append(element('h3', 'Automatic stablecoin price assessment'));
+  if (!forecasts.length) container.append(element('p', 'No supported USD stablecoin price model matches these verified dependencies. Unmodelled risk remains unknown.'));
+  for (const forecast of forecasts) {
+    const card = element('div', undefined, 'requirements-card');
+    card.append(element('strong', `${forecast.symbol} · ${forecast.role.replaceAll('_', ' ')}`));
+    card.append(element('p', `${forecast.status.replaceAll('_', ' ')}${forecast.priceUsd == null ? '' : ` · observed price $${forecast.priceUsd.toFixed(5)} · ${forecast.marketAsOf}`}`));
+    if (forecast.probabilityWithinHorizon != null) {
+      card.append(element('p', `Historical-reference probability of a further 2% drop within 24 hours: ${(100 * forecast.probabilityWithinHorizon).toFixed(2)}%. Training ends ${forecast.trainedThrough.slice(0, 10)}; this is not calibrated for current live execution.`));
+      card.append(element('p', `Support: ${forecast.reference.samples} overlapping hourly labels across ${forecast.reference.productDayClusters} product-day groups. ${forecast.reference.support.replaceAll('_', ' ')}. ${forecast.reference.caveat}`));
+      if (forecast.expectedUsdMarkDownside != null) card.append(element('p', `Experimental expected 24-hour USD mark downside: ${money(forecast.expectedUsdMarkDownside)}. This holds underlying units constant and excludes bad debt, yield and recovery beyond 24 hours.`));
+    }
+    card.append(element('p', forecast.lossMechanism));
+    if (forecast.source) {
+      const link = element('a', 'Price-data source'); link.href = forecast.source; link.target = '_blank'; link.rel = 'noopener noreferrer'; card.append(link);
+    }
+    container.append(card);
+  }
+}
+
+async function startAutomation(monitor) {
+  const size = Number($('assessment-usd').value);
+  if (!report || report.snapshot.mode !== 'live' || !Number.isFinite(size) || size <= 0) { $('automation-result').textContent = 'Inspect a live Ethereum vault and enter a positive position value above.'; return; }
+  const destinations = $('destination-addresses').value.split(/\s+/).filter(Boolean).map(address => `1:${address}`);
+  const policy = { maxMarketFraction: Number($('limit-market').value) / 100, maxCollateralFraction: Number($('limit-collateral').value) / 100, maxMoveFraction: Number($('limit-move').value) / 100 };
+  $('compare-destinations').disabled = true; $('start-monitor').disabled = true;
+  $('automation-result').textContent = 'Refreshing source accounting, candidate vaults and live prices. This can take a few minutes…';
+  try {
+    const root = report.snapshot.nodes.find(n => n.id === report.snapshot.rootPositionId);
+    const response = await fetch('/api/automation', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ selector: `${report.snapshot.chainId}:${root.address}`, positionUsd: size, destinations, policy, monitor, ...($('auto-fork').checked ? { forkDemoOwner: $('fork-owner').value.trim() } : {}) }) });
+    const job = await response.json(); if (!response.ok) throw new Error(job.error);
+    if (monitor) { monitorId = job.id; $('stop-monitor').disabled = false; }
+    clearTimeout(automationTimer);
+    pollAutomation(job.id);
+  } catch (error) {
+    $('automation-result').textContent = error.message;
+    $('compare-destinations').disabled = false; $('start-monitor').disabled = Boolean(monitorId);
+  }
+}
+async function pollAutomation(id) {
+  try {
+    const response = await fetch(`/api/automation/${id}`); const run = await response.json();
+    if (!response.ok) throw new Error(run.error);
+    if (run.result) { automationRun = run.result; renderAutomation(run); }
+    if (run.status === 'failed') $('automation-result').textContent = `${run.error}${run.nextAt ? ` Retry at ${run.nextAt}.` : ''}`;
+    if (run.status === 'running' || run.monitor && !run.stopped) automationTimer = setTimeout(() => pollAutomation(id), run.status === 'running' ? 2000 : 5000);
+    else { $('compare-destinations').disabled = false; $('start-monitor').disabled = Boolean(monitorId); }
+    if (run.status === 'complete') { $('compare-destinations').disabled = false; $('start-monitor').disabled = Boolean(monitorId); }
+  } catch (error) { $('automation-result').textContent = `Automation status unavailable: ${error.message}`; $('compare-destinations').disabled = false; }
+}
+function renderAutomation(run) {
+  const data = run.result, plan = data.allocation, container = $('automation-result'); container.replaceChildren();
+  const root = data.source.nodes.find(n => n.id === data.source.rootPositionId);
+  container.append(element('h3', `${root.label} · ${plan.status.replaceAll('_', ' ')}`));
+  container.append(element('p', `Cycle ${data.cycle} · fresh source block ${data.source.blockNumber} · ${data.completedAt}${run.nextAt ? ` · next check ${run.nextAt}` : ''}`));
+  container.append(element('p', plan.objective));
+  if (plan.baseline) container.append(element('p', `Largest market: ${(plan.baseline.largestMarket * 100).toFixed(2)}%. Largest collateral dependency: ${(plan.baseline.largestCollateral * 100).toFixed(2)}%.`));
+  const select = $('fork-destination'); select.replaceChildren(element('option', 'Select a destination'));
+  select.firstChild.value = '';
+  for (const candidate of plan.candidates) {
+    const card = element('div', undefined, 'requirements-card');
+    card.append(element('strong', `${candidate.label} · ${candidate.status.replaceAll('_', ' ')}`));
+    if (candidate.moveFraction != null) card.append(element('p', `Proposed move: ${(candidate.moveFraction * 100).toFixed(3)}% · ${money(candidate.moveUsd)} of the entered position. After: largest market ${(candidate.after.largestMarket * 100).toFixed(2)}%, collateral ${(candidate.after.largestCollateral * 100).toFixed(2)}%.`));
+    if (candidate.retainedDependencies) card.append(element('p', `${candidate.retainedDependencies.length} identified shared dependencies retained, including the underlying asset. Expected loss reduction and full USD migration cost remain unknown.`));
+    container.append(card);
+    if (candidate.status !== 'INCOMPATIBLE_DESTINATION' && candidate.status !== 'INCOMPLETE_ACCOUNTING' && candidate.status !== 'SNAPSHOT_TIME_MISMATCH') {
+      const option = element('option', candidate.label); option.value = candidate.snapshotId; select.append(option);
+    }
+  }
+  if (plan.selected) { select.value = plan.selected.snapshotId; $('fork-fraction').value = String(Math.min(100, plan.selected.moveFraction * 100)); }
+  $('run-fork').disabled = select.options.length < 2;
+  for (const alert of data.alerts) container.append(element('p', `${alert.type.replaceAll('_', ' ')}: ${alert.explanation}`, 'explanation'));
+  for (const fail of data.destinationFailures) container.append(element('p', `${fail.selector}: ${fail.status.replaceAll('_', ' ')}`));
+  if (data.forkRehearsalStatus !== 'NOT_ENABLED') container.append(element('p', `Automatic local-fork rehearsal: ${data.forkRehearsalStatus.replaceAll('_', ' ')}${data.fork?.error ? ` · ${data.fork.error}` : ''}. Mainnet transactions: 0.`));
+  if (data.fork?.status === 'FORK_SIMULATION_PASSED') {
+    renderForkCosts(container, data.fork);
+    const download = element('button', 'Download automatic fork migration proof'); download.type = 'button'; download.addEventListener('click', () => downloadJson(data.fork, 'automatic-fork-migration.json')); container.append(download);
+  }
+  renderForecasts(container, data.assessment.forecasts);
+  container.append(element('p', 'No funds moved. This is a concentration-policy proposal; missing cost/yield/loss forecasts prevent a complete economic recommendation. The local-fork demonstration below tests actual contracts and permissions separately.', 'explanation'));
+}
+$('automation-form').addEventListener('submit', event => { event.preventDefault(); startAutomation(false); });
+$('start-monitor').addEventListener('click', () => startAutomation(true));
+$('stop-monitor').addEventListener('click', async () => {
+  if (!monitorId) return;
+  try {
+    const response = await fetch('/api/automation/stop', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: monitorId }) });
+    if (!response.ok) throw new Error('Stop request failed');
+    monitorId = null; clearTimeout(automationTimer); $('stop-monitor').disabled = true; $('start-monitor').disabled = false; $('compare-destinations').disabled = false;
+    $('automation-result').append(element('p', 'Monitoring stopped. No further cycles will be scheduled.'));
+  } catch (error) { $('automation-result').append(element('p', error.message)); }
+});
+$('fork-form').addEventListener('submit', async event => {
+  event.preventDefault(); if (!automationRun) return;
+  $('run-fork').disabled = true; $('fork-result').textContent = 'Starting an isolated local fork, testing permission rejection cases and executing an atomic migration…';
+  try {
+    const response = await fetch('/api/fork-migration', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sourceSnapshotId: automationRun.source.snapshotId, destinationSnapshotId: $('fork-destination').value, owner: $('fork-owner').value.trim(), positionUsd: automationRun.allocation.positionUsd, moveFraction: Number($('fork-fraction').value) / 100 }) });
+    const job = await response.json(); if (!response.ok) throw new Error(job.error);
+    for (let i = 0; i < 120; i++) {
+      await new Promise(r => setTimeout(r, 1500));
+      const res = await fetch(`/api/jobs/${job.jobId}`); const status = await res.json();
+      if (!res.ok || status.status === 'failed') throw new Error(status.error);
+      if (status.status === 'complete') {
+        const result = status.fork; const container = $('fork-result'); container.replaceChildren();
+        container.append(element('h3', 'Atomic local-fork migration passed'));
+        container.append(element('p', `Ethereum state at block ${result.sourceBlock}, executed on local chain 31337. Mainnet transactions: ${result.mainnetTransactionsSent}.`));
+        container.append(element('p', `Shares redeemed (raw): ${result.sharesRedeemed}. Underlying received: ${result.underlyingAmount} tokens. Destination shares issued (raw): ${result.destinationSharesIssued}. This move is sized from your entered position value and uses the public holder’s real fork-state balance.`));
+        const list = element('ul');
+        for (const test of result.boundaryTests) list.append(element('li', `${test.name}: passed`));
+        container.append(list, element('p', `Policy contract ${result.migrator}. Migration ran in one transaction; outputs and allowances were checked.`));
+        renderForkCosts(container, result);
+        const download = element('button', 'Download fork receipts and permission report'); download.type = 'button'; download.addEventListener('click', () => downloadJson(result, 'fork-migration.json')); container.append(download);
+        break;
+      }
+      if (i === 119) throw new Error('Fork simulation is taking longer than three minutes.');
+    }
+  } catch (error) { $('fork-result').textContent = `Fork demonstration unavailable: ${error.message}`; }
+  finally { $('run-fork').disabled = false; }
+});
+function renderForkCosts(container, result) {
+  const forced = result.liquidityRoute?.kind === 'MORPHO_V2_PERMISSIONLESS_FORCE_DEALLOCATE_THEN_REDEEM';
+  container.append(element('p', forced ? `Route: withdraw available liquidity from ${result.liquidityRoute.legs.length} verified Morpho market(s), redeem source shares, then deposit into the destination in one transaction. Extra source shares burned for the withdrawal fee (raw): ${result.routePenaltyShares}.` : 'Route: redeem source shares and deposit into the destination in one transaction.'));
+  container.append(element('p', `Fork costs using fresh USD references: setup gas ${money(result.costs.setupGasUsd)}, execution gas ${money(result.costs.executionGasUsd)}, forced-withdrawal fee ${money(result.costs.forcePenaltyUsd)}. Total including rounding friction ${money(result.costUsd)}. These are measured fork-state costs; future execution and resulting allocations require a fresh simulation.`));
+}
+function downloadJson(data, filename) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  const link = element('a'); link.href = url; link.download = filename; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+$('load-backtest').addEventListener('click', async () => {
+  const container = $('backtest-result'); container.textContent = 'Loading the reproducible benchmark…';
+  try {
+    const response = await fetch('/api/backtest'); const data = await response.json(); if (!response.ok) throw new Error(data.error);
+    container.replaceChildren(element('p', `${data.series.reduce((sum, s) => sum + s.rows, 0).toLocaleString()} actual hourly candles. Training: ${data.model.trainedThrough.slice(0, 10)} cutoff. Probability event: a further 2% decline within 24 hours. Guard: two consecutive sub-$0.995 hourly closes with falling price; execute one hour after the signal.`));
+    const chart = svgElement('svg', { viewBox: '0 0 960 290', role: 'img', 'aria-label': 'USDC, DAI and USDT hourly USD close prices during March 2023' }); chart.classList.add('backtest-chart');
+    const curves = data.curves.filter(c => c.candles.length), timestamps = curves.flatMap(c => c.candles.map(v => v[0]));
+    const start = Math.min(...timestamps), end = Math.max(...timestamps);
+    const min = .85, max = 1.04; const x = t => 65 + (t - start) / (end - start) * 870, y = p => 245 - (p - min) / (max - min) * 215;
+    for (const price of [.85, .9, .95, 1]) {
+      chart.append(svgElement('line', { x1: 65, x2: 935, y1: y(price), y2: y(price), stroke: '#33465b' }), svgElement('text', { x: 4, y: y(price) + 5, fill: '#acc0d5' }, `$${price.toFixed(2)}`));
+    }
+    const controls = element('div', undefined, 'catalogue-controls');
+    for (const [index, curve] of curves.entries()) {
+      let previous; const segments = curve.candles.map(([t, price]) => { const segment = `${previous !== undefined && t - previous === 3600 ? 'L' : 'M'}${x(t)},${y(price)}`; previous = t; return segment; }).join(' ');
+      const path = svgElement('path', { d: segments, fill: 'none', stroke: ['#f7c462', '#7ce1c1', '#80b5ff'][index], 'stroke-width': 2 }); path.append(svgElement('title', {}, curve.product)); chart.append(path);
+      const button = element('button', curve.product); button.type = 'button'; button.setAttribute('aria-pressed', 'true'); button.addEventListener('click', () => { const visible = button.getAttribute('aria-pressed') === 'true'; button.setAttribute('aria-pressed', String(!visible)); path.style.display = visible ? 'none' : ''; }); controls.append(button);
+    }
+    for (let t = start; t <= end; t += 2 * 86400) chart.append(svgElement('text', { x: x(t), y: 277, fill: '#acc0d5', 'text-anchor': 'middle' }, new Date(t * 1000).toISOString().slice(5, 10)));
+    container.append(controls, chart, element('p', 'March 2023 hourly close prices, directly quoted in USD on Coinbase and Binance.US. Click a series to toggle it. This chart is price evidence, not a position-sized executable quote.'));
+    const table = element('table'); const head = element('tr');
+    for (const text of ['Dataset', 'First signal (UTC)', 'Holding at end', 'After migration', 'Final benefit / harm', 'False alarm episodes']) head.append(element('th', text)); table.append(head);
+    for (const c of data.counterfactuals.filter(c => c.costBps === 30)) {
+      const row = element('tr'); for (const text of [`${c.product} · ${c.role === 'training_in_sample' ? 'IN-SAMPLE TRAINING' : c.role}`, c.signalAt ?? 'No alarm', money(c.holdingTerminalUsd), money(c.reallocatedTerminalUsd), money(c.terminalBenefitUsd), String(c.falseAlarms ?? 'Unknown')]) row.append(element('td', text)); table.append(row);
+    }
+    const wrap = element('div', undefined, 'table-scroll'); wrap.append(table); container.append(wrap);
+    container.append(element('p', 'Each case starts with $10,000. The table assumes 30 basis points (0.3%) total switching cost and actual USDT destination prices. UST is in-sample; USDC, DAI and USDT are held out. USDC/DAI recover, so selling during their depeg harmed final wealth in these tests. The full report includes 0.1% and 1% cost cases.'));
+    const metrics = element('ul');
+    for (const score of data.scores.filter(s => s.role !== 'validation' && s.brier != null)) metrics.append(element('li', `${score.product} (${score.role}): Brier ${score.brier.toFixed(5)} versus baseline ${score.baselineBrier.toFixed(5)}. Lower is better. ${score.brier > score.baselineBrier ? 'Model underperformed the baseline.' : 'Model beat this baseline on this sample.'} ${score.samples} overlapping test labels.`));
+    container.append(metrics, element('p', 'An isolated Binance.US intrahour USDC print reached $0.33; it is retained and flagged in the report. It is not used to claim $6,700 of avoidable loss. No historical vault withdrawal, order-book fill or signing authority is verified.', 'explanation'));
+    const download = element('button', 'Download complete benchmark and sources'); download.type = 'button'; download.addEventListener('click', () => downloadJson(data, 'backtest-report.json')); container.append(download);
+  } catch (error) { container.textContent = error.message; }
+});
 function svgElement(tag, attributes = {}, text) {
   const result = document.createElementNS(svgNS, tag);
   for (const [key, value] of Object.entries(attributes)) result.setAttribute(key, String(value));
@@ -182,13 +347,27 @@ function renderResult() {
   const { incident, decision } = report;
   const container = $('result');
   const fixture = report.snapshot.mode === 'fixture';
-  container.replaceChildren(element('p', fixture ? 'SIMPLIFIED FIXTURE COMPARISON' : 'MODELLED IMPACT · CHECKED EXIT DECISION', 'eyebrow'), element('div', decision.action.replaceAll('_', ' '), `decision ${decision.action}`));
+  const stress = report.stressTest;
+  const status = { CALCULATED: 'Scenario calculated', MISSING_POSITION_VALUE: 'Enter a position value', BLOCKED_BY_DATA: 'Calculation needs complete, fresh vault data', LOSS_MODEL_UNAVAILABLE: 'Dollar loss needs another model' };
+  container.replaceChildren(element('p', fixture ? 'SIMPLIFIED FIXTURE COMPARISON' : 'HYPOTHETICAL RESULT · YOUR ASSUMPTIONS', 'eyebrow'), element('div', fixture ? decision.action.replaceAll('_', ' ') : incident.estimatedWithdrawalUnavailable ? 'Withdrawal blocked in this scenario' : status[stress?.status] ?? 'Scenario result', `decision ${fixture ? decision.action : stress?.status === 'CALCULATED' ? 'STAY' : 'INSUFFICIENT_EVIDENCE'}`));
+  if (!fixture && incident.estimatedWithdrawalUnavailable) container.append(element('p', 'EXIT UNAVAILABLE under this hypothetical chain outage. This does not establish a current outage or a permanent dollar loss.', 'explanation'));
+  if (!fixture && stress?.status === 'BLOCKED_BY_DATA') {
+    const reasons = element('div', undefined, 'requirements-card');
+    reasons.append(element('strong', 'Why the calculation is unavailable'));
+    const list = element('ul');
+    for (const blocker of report.blockers ?? []) list.append(element('li', blocker.reason));
+    const refresh = element('button', 'Refresh vault data and retry', 'secondary');
+    refresh.disabled = report.snapshot.mode !== 'live';
+    refresh.addEventListener('click', () => { refresh.disabled = true; refreshScenario(); });
+    reasons.append(list, refresh); container.append(reasons);
+  }
+  if (!fixture && stress?.status === 'LOSS_MODEL_UNAVAILABLE') container.append(element('p', 'The graph shows which dependencies are affected. This scenario needs an additional financial model to calculate dollar losses; changing the probability cannot supply that model.', 'explanation'));
   const metrics = {
     [fixture ? 'Position value (fixture)' : report.exit?.fullExit && report.exit.positionValueUsd === report.positionUsd ? 'Position value (checked balance/reference)' : 'Assumed position value']: money(fixture ? report.snapshot.rootPositionUsd : report.positionUsd),
-    'Conditional additional loss': money(incident.incrementalLossIfStayingUsd),
+    'Loss if this scenario happens': money(incident.incrementalLossIfStayingUsd),
     'Expected loss (assumed probability)': money(decision.estimatedExpectedLossUsd),
-    [fixture ? 'Exit cost (fixture)' : 'Checked exit cost']: money(decision.exitCostUsd),
-    [fixture ? 'Break-even probability' : 'Checked break-even probability']: decision.breakEvenProbability == null ? 'Unknown' : `${(decision.breakEvenProbability * 100).toFixed(2)}%`,
+    [fixture ? 'Exit cost (fixture)' : 'Your assumed exit cost']: money(fixture ? decision.exitCostUsd : stress?.assumedExitCostUsd),
+    ...(fixture ? { 'Break-even probability': decision.breakEvenProbability == null ? 'Unknown' : `${(decision.breakEvenProbability * 100).toFixed(2)}%` } : {}),
     'Affected paths to position': String(incident.pathsToPosition.length)
   };
   for (const [label, value] of Object.entries(metrics)) {
@@ -200,25 +379,34 @@ function renderResult() {
   if (report.exposureUsd != null && report.positionUsd > 0 && report.scenario.kind === 'MARKET_LOSS' && incident.incrementalLossIfStayingUsd != null) {
     container.append(element('p', `${money(report.positionUsd)} position × ${(report.exposureUsd / report.positionUsd * 100).toFixed(4)}% deployed allocation × ${(report.scenario.severityFraction * 100).toFixed(1)}% assumed lender loss = ${money(incident.incrementalLossIfStayingUsd)} conditional additional loss.`, 'explanation'));
   }
-  if (report.sensitivity) {
+  if (stress?.comparison || report.sensitivity) {
+    const comparison = stress ?? report.sensitivity;
     const sensitivity = element('div', undefined, 'sensitivity-card');
     sensitivity.append(element('p', 'ASSUMPTIONS-ONLY COMPARISON', 'eyebrow'));
     const labels = { EXIT_COST_LOWER: 'Exiting has lower modelled cost', STAY_COST_LOWER: 'Staying has lower modelled cost', EQUAL_COST: 'Modelled costs are equal' };
-    sensitivity.append(element('strong', labels[report.sensitivity.comparison] ?? 'Enter a probability to compare costs'));
-    sensitivity.append(element('p', `Expected additional loss: ${money(report.sensitivity.expectedLossUsd)} · Assumed exit cost: ${money(report.sensitivity.assumedExitCostUsd)}`));
-    sensitivity.append(element('p', `Break-even probability: ${(report.sensitivity.breakEvenProbability * 100).toFixed(2)}%.${report.sensitivity.breakEvenProbability > 1 ? ' Above 100%: the assumed exit cost exceeds the conditional loss even if the event occurs.' : ''}`));
-    sensitivity.append(element('p', 'This comparison assumes an exit is possible and avoids the modelled loss. It is separate from the checked redemption decision above.'));
+    sensitivity.append(element('strong', labels[comparison.comparison] ?? 'Enter a probability to compare costs'));
+    sensitivity.append(element('p', `Expected additional loss: ${money(comparison.expectedLossUsd)} · Assumed exit cost: ${money(comparison.assumedExitCostUsd)}`));
+    if (comparison.breakEvenProbability !== null) sensitivity.append(element('p', `Break-even probability: ${(comparison.breakEvenProbability * 100).toFixed(2)}%.${comparison.breakEvenProbability > 1 ? ' Above 100%: your assumed exit cost exceeds the scenario loss even if the event is certain.' : ''}`));
+    sensitivity.append(element('p', 'This is the answer to your hypothetical example, assuming an exit is possible and avoids this loss. It does not establish an actual withdrawal or predict an incident.'));
     container.append(sensitivity);
+  }
+  if (!fixture) {
+    const actual = element('div', undefined, 'requirements-card');
+    actual.append(element('p', 'ACTUAL WITHDRAWAL · SEPARATE CHECK', 'eyebrow'));
+    actual.append(element('strong', report.exit ? decision.action.replaceAll('_', ' ') : 'Not checked'));
+    if (!report.exit) actual.append(element('p', 'INSUFFICIENT EVIDENCE for a real withdrawal decision. Your assumed cost above is not a checked quote. Use “Assess a public position” below to check a holder’s withdrawal.'));
+    else actual.append(element('p', `Checked exit cost: ${money(decision.exitCostUsd)}. This decision remains conditional on the hypothetical scenario.`));
+    container.append(actual);
   }
   if (decision.action === 'INSUFFICIENT_EVIDENCE' && report.decisionRequirements?.length) {
     const requirements = element('div', undefined, 'requirements-card');
+    requirements.id = 'decision-requirements';
     requirements.append(element('strong', 'What is needed for a checked decision'));
     const list = element('ul');
     for (const requirement of report.decisionRequirements) list.append(element('li', requirement));
     requirements.append(list); container.append(requirements);
   }
-  container.append(element('p', decision.explanation, 'explanation'));
-  for (const blocker of report.blockers ?? []) container.append(element('p', `Estimate withheld · ${blocker.category}: ${blocker.reason}`, 'explanation'));
+  if (fixture || report.exit) container.append(element('p', decision.explanation, 'explanation'));
   const details = element('details');
   details.append(element('summary', 'Model and assumptions'));
   details.append(element('p', incident.estimationMethod));
@@ -280,13 +468,13 @@ $('export').addEventListener('click', () => {
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
-$('scenario-form').addEventListener('submit', async event => {
-  event.preventDefault();
+async function applyScenario() {
   if ($('simulate').disabled) return;
   $('simulate').disabled = true;
   $('error').textContent = '';
   const optionalNumber = id => $(id).value.trim() === '' ? null : Number($(id).value);
   const probability = optionalNumber('probability');
+  const snapshotId = report.snapshot.snapshotId;
   try {
     const response = await fetch('/api/simulate', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -301,12 +489,32 @@ $('scenario-form').addEventListener('submit', async event => {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
+    if (report.snapshot.snapshotId !== snapshotId) return;
     report = data;
     drawGraph();
     renderResult();
   } catch (error) { $('error').textContent = `Scenario could not be applied: ${error.message}`; }
   finally { $('simulate').disabled = false; }
-});
+}
+$('scenario-form').addEventListener('submit', event => { event.preventDefault(); applyScenario(); });
+
+async function refreshScenario() {
+  const fields = ['kind', 'target', 'position-usd', 'severity', 'horizon', 'probability', 'exit-cost', 'assessment-usd'];
+  const saved = Object.fromEntries(fields.map(id => [id, $(id).value]));
+  const root = report.snapshot.nodes.find(n => n.id === report.snapshot.rootPositionId);
+  $('chain-id').value = report.snapshot.chainId;
+  $('vault-address').value = root.address;
+  if (!await inspectLive()) return;
+  $('kind').value = saved.kind; populateTargets();
+  for (const id of fields.filter(id => !['kind', 'target'].includes(id))) $(id).value = saved[id];
+  $('severity-value').textContent = `${saved.severity}%`;
+  if (![...$('target').options].some(option => option.value === saved.target)) {
+    $('error').textContent = 'The selected dependency is no longer in the refreshed graph. Select a new scenario target.'; return;
+  }
+  $('target').value = saved.target;
+  if (saved['assessment-usd']) assessSnapshot(Number(saved['assessment-usd']));
+  await applyScenario();
+}
 function showReport(data) {
   report = data;
   selected = undefined;
@@ -321,7 +529,7 @@ function showReport(data) {
   else assessSnapshot(null);
   $('mode-badge').textContent = fixture ? 'FIXTURE DEMO' : replay ? 'HISTORICAL RECORDING' : 'LIVE SNAPSHOT';
   $('evidence-badge').textContent = fixture ? 'FIXTURE EVIDENCE ONLY' : 'SOURCE EVIDENCE';
-  $('mode-notice').textContent = fixture ? 'ILLUSTRATIVE DATA: fabricated relationships and balances for testing; no live data in this fixture.' : replay ? 'HISTORICAL RECORDING: saved provider observations, with original timestamps. Schema validation does not authenticate imported evidence. Scenarios are hypothetical; current exit decisions are disabled.' : 'LIVE SNAPSHOT: timestamped dependency measurements and capital allocations. Forecasts and reallocation are pending. Advanced stress scenarios use assumed severity and probability; coverage gaps are listed below.';
+  $('mode-notice').textContent = fixture ? 'ILLUSTRATIVE DATA: fabricated relationships and balances for testing; no live data in this fixture.' : replay ? 'HISTORICAL RECORDING: saved provider observations, with original timestamps. Schema validation does not authenticate imported evidence. Scenarios are hypothetical; current exit decisions are disabled.' : 'LIVE SNAPSHOT: timestamped dependencies and capital allocations. Automatic price assessments and concentration proposals are available below; forecasting is experimental and execution is local-fork only. Advanced stress tests use assumed severity and probability.';
   $('quote').disabled = fixture || replay;
   $('find-holder').disabled = fixture || replay;
   $('holder-result').textContent = '';
@@ -350,28 +558,34 @@ async function assessSnapshot(positionUsd) {
   const sequence = ++assessmentSequence;
   const snapshotId = report.snapshot.snapshotId;
   $('assess').disabled = true;
-  $('assessment-result').textContent = 'Checking discovered dependencies and verified capital measurements…';
+  $('assessment-result').textContent = 'Calculating market allocations from the last vault inspection…';
   try {
     const response = await fetch('/api/assess', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ snapshotId, positionUsd }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
     if (sequence !== assessmentSequence || report.snapshot.snapshotId !== snapshotId) return;
     const container = $('assessment-result'); container.replaceChildren();
-    container.append(element('p', `${data.dependencyCount} discovered components · ${data.failedRoundChecks} failed basic oracle round checks · ${data.unknownOracleChecks} oracle checks unknown`, 'explanation'));
+    container.append(element('p', `Data collected ${new Date(data.observedAt).toLocaleString()}. Your amount is split across lending markets in the same proportions as the vault.`, 'explanation'));
     if (data.concentrations.length) {
-      container.append(element('strong', 'Largest measured market allocations (capital exposure, not estimated loss)'));
+      container.append(element('strong', positionUsd === null ? 'Largest market allocations — enter your amount to see dollars' : `Largest market exposures for your ${money(positionUsd)} position`));
       const list = element('ul');
-      for (const market of data.concentrations.slice(0, 5)) {
+      const remainder = element('details');
+      const remainingList = element('ul');
+      remainder.append(element('summary', `Show the other ${Math.max(0, data.concentrations.length - 5)} funded markets`), remainingList);
+      for (const [index, market] of data.concentrations.entries()) {
         const item = element('li');
         const button = element('button', `${market.label}: ${(market.fraction * 100).toFixed(3)}%${market.exposureUsd === null ? '' : ` · ${money(market.exposureUsd)}`}`, 'secondary');
         button.addEventListener('click', () => { $('node-search').value = market.entityId; $('node-search').dispatchEvent(new Event('change')); });
-        item.append(button); list.append(item);
+        item.append(button); (index < 5 ? list : remainingList).append(item);
       }
       container.append(list);
+      if (data.concentrations.length > 5) container.append(remainder);
     }
-    for (const check of data.oracleChecks.filter(o => o.status === 'ROUND_CHECK_FAILED')) container.append(element('p', `${check.label}: ${check.explanation}`, 'explanation'));
-    container.append(element('p', 'Forecast and reallocation: insufficient evidence. A calibrated forecasting model and checked destinations/routes are not installed.', 'explanation'));
-    const details = element('details'); details.append(element('summary', 'Evidence, checks and missing models'));
+    if (!data.accountingUsable) container.append(element('p', 'Market amounts cannot be calculated from these data. Refresh the vault inspection; missing markets or unsupported accounting are explained below.', 'explanation'));
+    container.append(element('p', 'These amounts are money exposed to a market, not money lost.', 'explanation'));
+    renderForecasts(container, data.forecasts ?? []);
+    const details = element('details'); details.append(element('summary', 'Data checks and limitations'));
+    details.append(element('p', `${data.dependencyCount} discovered components · ${data.failedRoundChecks} failed basic oracle round checks · ${data.unknownOracleChecks} oracle checks unknown. A failed basic round check needs investigation; it does not establish an incident or loss.`));
     const list = element('ul');
     for (const check of data.oracleChecks) {
       const item = element('li', `${check.label}: ${check.status.replaceAll('_', ' ')}${check.ageSecondsAtSnapshot === null ? '' : ` · age at snapshot ${check.ageSecondsAtSnapshot}s`}`);
@@ -439,10 +653,10 @@ async function inspectLive() {
       if (sequence !== activeInspection) return;
       const statusResponse = await fetch(`/api/jobs/${job.jobId}`); const status = await statusResponse.json();
       if (!statusResponse.ok || status.status === 'failed') throw new Error(status.error);
-      if (status.status === 'complete') { showReport(status.report); $('activity').textContent = `${status.report.snapshot.protocol}: ${status.report.snapshot.nodes.length} nodes and ${status.report.snapshot.edges.length} relationships. Select a node to inspect the evidence.`; return; }
+      if (status.status === 'complete') { showReport(status.report); $('activity').textContent = `${status.report.snapshot.protocol}: ${status.report.snapshot.nodes.length} nodes and ${status.report.snapshot.edges.length} relationships. Select a node to inspect the evidence.`; return true; }
     }
     throw new Error('Inspection is taking longer than three minutes. Retry after checking provider status.');
-  } catch (error) { $('activity').textContent = `Live inspection failed: ${error.message}. Use Load fixture demo for the separate illustrative example.`; }
+  } catch (error) { $('activity').textContent = `Live inspection failed: ${error.message}. Use Load fixture demo for the separate illustrative example.`; return false; }
   finally { if (sequence === activeInspection) { $('inspect').disabled = false; $('simulate').disabled = !report; } }
 }
 $('inspect-form').addEventListener('submit', event => { event.preventDefault(); inspectLive(); });

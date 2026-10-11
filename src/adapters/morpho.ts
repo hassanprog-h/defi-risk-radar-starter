@@ -83,6 +83,7 @@ export class MorphoAdapter implements ProtocolAdapter {
       const deployed = state.allocation.reduce((sum, item) => sum + BigInt(item.supplyAssets), 0n);
       if (deployed > BigInt(state.totalAssets)) builder.unknown(id, 'accounting', 'Observed allocations exceed vault totalAssets; numeric loss is disabled.');
     } else {
+      for (const reason of vault.paginationIssues ?? []) builder.unknown(id, 'traversal', reason);
       builder.observe(id, 'idleAssets', vault.idleAssets, evidence, 'raw_asset_units');
       const page = vault.adapters;
       if (page.pageInfo && page.pageInfo.countTotal > (page.items?.length ?? 0)) builder.unknown(id, 'traversal', 'Adapter pagination is incomplete; some adapters are missing from this snapshot.');

@@ -2,7 +2,16 @@
 
 ## Updated product direction — 2026-10-11
 
-The user reports Belem prefers actionable reallocation, potentially automatic after initial authorization, and forecasts derived from dependencies/live data rather than manually entered probabilities. This is conversation feedback, not a verified amendment to the published PDF. It expands the original product target. Current code remains read-only; a future local-fork executor does not activate live fund movement.
+The user reports Belem prefers actionable reallocation, potentially automatic after initial authorization, and forecasts derived from dependencies/live data rather than manually entered probabilities. This is conversation feedback, not a verified amendment to the published PDF. It expands the original product target. Mainnet remains read-only; the implemented local-fork executor never activates live fund movement.
+
+## Implemented expansion
+
+- Live fiat-USD stablecoin feeds plus an experimental historical regime model automatically supply a defined 24-hour price-event reference probability. It is not a calibrated live incident model. Borrower bad debt and security exploits remain unforecasted. [Measured held-out failures and successes](BENCHMARK_RESULTS.md) are preserved.
+- The minimum partial allocation solver enforces user policy limits for observed market and collateral concentrations. Shared exposures are grouped, and the same underlying/issuer risk remains visible. Dollar expected-loss benefits and destination yield are not fabricated.
+- A server monitor refreshes accounting, prices and proposals, records verified dependency changes and saves local reports. One explicitly enabled automatic fork rehearsal is allowed per setup; unhedged underlying depeg blocks same-token rehearsal.
+- The fork-only policy contract receives bounded source-share approval once; a separate executor atomically redeems and deposits for the fixed owner. Source/destination, amounts, cumulative spending, expiry, cooldown, revocation and minimum outputs are enforced in contract code. Rejection cases and actual real-vault balance/output checks run on the local fork. Deployment is rejected outside chain 31337. See [contract details](../contracts/README.md).
+
+Pending: wider incident/calibration data and borrower/liquidation/recovery models, joint risk/yield allocation optimization, cross-asset swap liquidity and production wallet authorization. The local demonstration is not a real wallet delegation or historical proof of executable incident exits.
 
 ## Desired pipeline
 
@@ -18,9 +27,9 @@ Manual stress tests remain an advanced analyst tool. Position selection and amou
 
 ## Implemented observational slice
 
-`src/live/assess.ts` and `POST /api/assess` accept `{snapshotId, positionUsd}`; a null amount permits checking observations before sizing. They measure verified deployed market concentrations, deduplicate shared components/cycles, and report basic pricing-round checks where readable at the anchor block. Missing/old anchors, inconsistent/duplicate capital and unverified data suppress unsupported measurements. Feed age does not establish staleness without its heartbeat policy. Forecast values remain null with `MODEL_NOT_AVAILABLE`; allocation remains `INSUFFICIENT_EVIDENCE` with execution disabled.
+`src/live/assess.ts` provides the base observational assessment; `POST /api/assess` now calls the additional price-forecast wrapper. Both accept `{snapshotId, positionUsd}`; a null amount permits checking observations before sizing. They measure verified deployed market concentrations, deduplicate shared components/cycles, and report basic pricing-round checks where readable at the anchor block. Missing/old anchors, inconsistent/duplicate capital and unverified data suppress unsupported measurements. Feed age does not establish staleness without its heartbeat policy. The wrapper adds individual dependency price references; the aggregate portfolio incident-loss forecast remains unavailable. The separate automation endpoint supplies concentration proposals with live execution disabled.
 
-The dashboard runs these checks after inspection and offers an amount-only form. `Inspect live vault` collects new data; `Assess snapshot` checks loaded observations and reevaluates freshness. This is not a background monitoring daemon or a calibrated forecaster. Manual controls are under **Advanced: hypothetical stress tests**. Public-holder redemption checks remain separate and read-only.
+The dashboard runs these checks after inspection and offers an amount-only form named **Where your vault invests your money**. `Inspect live vault` collects new graph/accounting data; **Show my exposure** reevaluates freshness and fetches live price data through the forecast wrapper. The separate reallocation panel starts fresh comparison/background monitoring. Manual controls remain under **Advanced: hypothetical stress tests**. Public-holder redemption checks remain read-only.
 
 ## Automatic probability and severity models
 

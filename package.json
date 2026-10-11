@@ -15,15 +15,25 @@
     "test": "npm run build && node scripts/test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "replay": "npm run build && node scripts/replay.mjs",
-    "test:browser": "npm run build && node scripts/browser-smoke.mjs"
+    "test:browser": "npm run build && node scripts/browser-smoke.mjs",
+    "build:contracts": "node scripts/compile-contract.mjs",
+    "data:history": "npm run build && node scripts/download-history.mjs",
+    "backtest": "npm run build && node scripts/backtest.mjs",
+    "automation": "npm run build && node scripts/automation.mjs",
+    "test:fork": "npm run build && npm run build:contracts && node scripts/fork-migration.mjs"
   },
   "devDependencies": {
+    "@foundry-rs/anvil": "^1.7.1",
     "@playwright/test": "^1.64.0",
     "@types/node": "^26.6.5",
+    "solc": "^0.8.37",
     "typescript": "^5.9.0"
   },
   "dependencies": {
     "viem": "^2.57.4",
     "zod": "^4.6.5"
+  },
+  "overrides": {
+    "tmp": "^0.2.7"
   }
 }

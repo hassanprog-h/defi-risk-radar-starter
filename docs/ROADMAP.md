@@ -10,7 +10,7 @@ The user subsequently authorized building the broader application. M1 is impleme
 | --- | --- |
 | M0 | Fixture core and visual explorer functional |
 | M1 | Live V1 adapter, RPC corroboration, actual JSON CLI, network/provenance metadata, captured-response tests and two real vault checks implemented |
-| M2 | V2 adapter/nested traversal, paginated vault directory, GraphQL unlisted fallback, generic ERC-4626 accounting and bounded source/proxy enrichment implemented; one-block accounting for fully discovered direct-market adapters implemented; nested accounting and wider inner-page discovery remain incomplete |
+| M2 | V2 adapter/nested traversal, paginated vault directory and adapter/position lists, GraphQL unlisted fallback, generic ERC-4626 accounting and bounded source/proxy enrichment implemented; one-block direct-market accounting implemented; nested accounting and discovery beyond configured pagination budgets remain incomplete |
 | M3 | Live address selector, graph interaction, evidence, coverage, scenarios and export implemented with native SVG/JavaScript and a local Node API; no React Flow dependency required for this slice |
 | M4 | Snapshot measurements, feed round data, conditional V1/reconciled V2 market-loss and explicit vault-capital stress implemented; assumptions-only comparison and actionable missing-data requirements implemented; borrower bad-debt/liquidation models remain pending |
 | M5 | Public-owner direct redemption preview, verified example-holder finder, correct V2 zero-max semantics, refreshed pricing, read-only gas estimate, quote freshness and qualified decisions implemented; swap execution quotes, queues and advanced route models remain pending |
@@ -23,10 +23,11 @@ Saved real-provider graphs can be imported for explicitly labelled hypothetical 
 
 The user's 2026-10-11 conversation with Belem expands the target to automatic forecasts, destination comparison and potentially bounded delegated execution. This sequence supersedes the original suggested sequence without declaring unfinished models complete. See [AUTOMATION_AND_REALLOCATION.md](AUTOMATION_AND_REALLOCATION.md) for acceptance criteria.
 
-- **Implemented first slice:** automatic snapshot dependency measurements via `POST /api/assess`, an amount-only dashboard form and advanced manual stress tests. No calibrated probabilities or automatic fund movement are claimed.
-- **Next:** reproducible time-series/borrower dataset and one validated forecasting model, with event/horizon, calibration, provenance and uncertainty.
-- **Then:** real destination analysis, retained/shared dependencies and full migration costs, including deposit feasibility and partial moves.
-- **Then:** local-fork migration simulation and permission-boundary tests, followed by one supported smart-account delegation and monitoring integration.
+- **Implemented:** amount-only observations plus live stablecoin price checks and an experimental historical regime model; 15,098 real hourly candles, chronological scoring, quiet periods and honest recovery/false-alarm evaluation. See [benchmark results](BENCHMARK_RESULTS.md). This does not establish calibrated live probabilities.
+- **Implemented:** fresh real destination comparison and minimum partial reallocation under concentration limits, including shared capital factors and retained issuer/core-protocol risks. Full expected-loss/yield optimization remains pending.
+- **Implemented:** five-minute server monitoring, persisted reports/change alerts and optional one automatic local-fork rehearsal per setup. An atomic fork-only policy contract and real source/destination tests validate migration permissions, outputs and balance invariants; gas/reference-price costs are measured. No mainnet execution is activated.
+- **Verified:** the full live dashboard path and Hyperithm-to-Keyrock forced-liquidity migration passed, with fee shares included in permission bounds. Timestamped proofs are included in `datasets/`. Offline tests: 58 passed, one optional live smoke test skipped; typechecking and browser checks passed. Post-execution concentration reconstruction remains pending.
+- **Next:** borrower health/liquidation/recovery models, wider independent event coverage and model uncertainty/drift validation; executable cross-asset swap routes and comparable destination loss/yield forecasts; production wallet delegation and audit.
 - **Activation:** mainnet remains read-only until concrete execution, policy and simulation are reviewed and real execution explicitly enabled.
 
 ## Milestone 0 — Executable domain seed (included)

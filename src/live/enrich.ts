@@ -15,7 +15,7 @@ export async function enrich(builder: GraphBuilder, rpc: RpcReader, source?: Sou
   for (let index = 0; index < queue.length; index++) {
     const node = queue[index]!;
     if (!node.address || visited.has(node.id)) continue;
-    if (visited.size >= 60) { builder.unknown(node.id, 'traversal', 'Enrichment node budget reached.'); break; }
+    if (visited.size >= 60) { builder.unknown(node.id, 'enrichment', 'Additional contract enrichment stopped at the 60-node budget. Core market accounting is checked separately; other dependency layers remain incomplete.'); break; }
     visited.add(node.id);
     const discoveredBefore = new Set(builder.finish().nodes.map(n => n.id));
     if (node.kind === 'oracle') await inspectOracle(builder, rpc, node);

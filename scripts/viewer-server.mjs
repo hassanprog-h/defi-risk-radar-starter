@@ -12,6 +12,8 @@ import { loadReplay } from '../dist/live/replay.js';
 import { findPublicHolder } from '../dist/live/holders.js';
 import { assessDependencies } from '../dist/live/assess.js';
 import { api, liveOptions } from './live-config.mjs';
+import { createAutomationService, assessWithForecast } from './automation-service.mjs';
+import { simulateMigration } from './fork-migration.mjs';
 
 const files = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
@@ -63,6 +65,8 @@ export function createViewerServer() {
   const jobs = new Map();
   const snapshots = new Map();
   const quotes = new Map();
+  const automation = createAutomationService();
+  let forkActive = false;
   let active = 0;
   const requestSchema = z.object({
     snapshotId: z.string().max(400), kind: z.enum(['MARKET_LOSS', 'ORACLE_STALE', 'CHAIN_OUTAGE', 'ASSET_DEPEG', 'CONTRACT_EXPLOIT', 'LIQUIDITY_SHOCK']),
@@ -79,7 +83,7 @@ export function createViewerServer() {
     const market = live.nodes.find(node => node.kind === 'lending_market');
     return analyzeLive(live, { id: 'hypothetical-live-stress', kind: market ? 'MARKET_LOSS' : 'CONTRACT_EXPLOIT', targetNodeId: market?.id ?? live.rootPositionId, severityFraction: .2, horizonHours: 24 }, { positionUsd: null });
   };
-  return createServer(async (request, response) => {
+  const server = createServer(async (request, response) => {
     response.setHeader('Cache-Control', 'no-store');
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -89,10 +93,46 @@ export function createViewerServer() {
       if (![`localhost:${port}`, `127.0.0.1:${port}`].includes(request.headers.host)) return json(response, 403, { error: 'Use the local server address' });
       if (request.method === 'POST' && request.headers.origin && ![`http://localhost:${port}`, `http://127.0.0.1:${port}`].includes(request.headers.origin)) return json(response, 403, { error: 'Cross-origin requests are not allowed' });
       if (request.method === 'GET' && path === '/api/status') return json(response, 200, { rpcConfigured: Boolean(process.env.ETHEREUM_RPC_URL), etherscanConfigured: Boolean(process.env.ETHERSCAN_API_KEY), mode: 'read_only' });
+      if (request.method === 'GET' && path === '/api/backtest') {
+        try { return json(response, 200, JSON.parse(await readFile(new URL('../datasets/backtest-report.json', import.meta.url), 'utf8'))); }
+        catch { return json(response, 503, { error: 'Historical benchmark unavailable. Run npm run data:history then npm run backtest.' }); }
+      }
+      if (request.method === 'POST' && path === '/api/automation') {
+        try { return json(response, 202, automation.start(await readBody(request))); }
+        catch { return json(response, 400, { error: 'Use one Ethereum source, positive USD size and up to three destination vaults. One monitor and one automation cycle may run at a time.' }); }
+      }
+      if (request.method === 'GET' && path.startsWith('/api/automation/')) {
+        const run = automation.get(path.slice('/api/automation/'.length));
+        if (run?.result) for (const snapshot of [run.result.source, ...run.result.destinations]) {
+          if (!snapshots.has(snapshot.snapshotId) && snapshots.size >= 30) { const oldest = snapshots.keys().next().value; snapshots.delete(oldest); quotes.delete(oldest); }
+          snapshots.set(snapshot.snapshotId, snapshot);
+        }
+        return json(response, run ? 200 : 404, run ?? { error: 'Automation run not found' });
+      }
+      if (request.method === 'POST' && path === '/api/automation/stop') {
+        try { const { id } = z.object({ id: z.string().uuid() }).parse(await readBody(request)); return json(response, automation.stop(id) ? 200 : 404, { stopped: true }); }
+        catch { return json(response, 400, { error: 'Supply an automation run ID.' }); }
+      }
+      if (request.method === 'POST' && path === '/api/fork-migration') {
+        if (forkActive) return json(response, 429, { error: 'A local fork simulation is already running.' });
+        let body, source, destination;
+        try {
+          body = z.object({ sourceSnapshotId: z.string().max(400), destinationSnapshotId: z.string().max(400), owner: z.string().regex(/^0x[0-9a-fA-F]{40}$/), positionUsd: z.number().finite().positive().max(1e12), moveFraction: z.number().finite().positive().max(1).default(1) }).parse(await readBody(request));
+          source = getSnapshot(body.sourceSnapshotId); destination = getSnapshot(body.destinationSnapshotId);
+          if ([source, destination].some(s => s.chainId !== 1 || s.mode !== 'live' || Date.now() - Date.parse(s.observedAt) > 300_000)) throw new Error('STALE');
+        } catch { return json(response, 400, { error: 'Supply two fresh Ethereum vault snapshots, a public EOA owner and a migration fraction.' }); }
+        forkActive = true;
+        const id = randomUUID(); jobs.set(id, { status: 'running' });
+        simulateMigration({ source: source.nodes.find(n => n.id === source.rootPositionId).address, destination: destination.nodes.find(n => n.id === destination.rootPositionId).address, owner: body.owner, positionUsd: body.positionUsd, moveFraction: body.moveFraction })
+          .then(result => jobs.set(id, { status: 'complete', fork: result }))
+          .catch(error => jobs.set(id, { status: 'failed', error: error.message }))
+          .finally(() => { forkActive = false; });
+        return json(response, 202, { jobId: id, mode: 'LOCAL_FORK_ONLY' });
+      }
       if (request.method === 'POST' && path === '/api/assess') {
         try {
           const body = z.object({ snapshotId: z.string().max(400), positionUsd: z.number().finite().positive().max(1e12).nullable() }).parse(await readBody(request));
-          return json(response, 200, assessDependencies(getSnapshot(body.snapshotId), body.positionUsd));
+          return json(response, 200, await assessWithForecast(getSnapshot(body.snapshotId), body.positionUsd));
         } catch { return json(response, 400, { error: 'Supply a loaded provider snapshot and a positive USD position value (or null).' }); }
       }
       if (request.method === 'POST' && path === '/api/replay') {
@@ -199,6 +239,8 @@ export function createViewerServer() {
       json(response, 500, { error: 'Unable to serve the request; provider or validation failed' });
     }
   });
+  server.once('close', () => automation.close());
+  return server;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
