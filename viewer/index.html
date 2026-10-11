@@ -48,6 +48,12 @@
         <p class="field-note">Automatic fork testing is enabled above and finds a suitably funded holder itself. This form is a separate manual test using the entered public owner. One automatic attempt per setup; no mainnet permission is created.</p>
         <div id="fork-result" aria-live="polite"></div>
       </details>
+      <details id="safe-panel"><summary>Prepare an unsigned transaction for your Safe</summary>
+        <p>Turns the proposed move into one atomic Safe batch: approve exact shares, redeem and redeposit through Morpho Bundler3 with on-chain share-price floors, then reset the approval. It is simulated as your Safe on a private local fork first. Nothing is signed or sent; your Safe signers import the file in Safe{Wallet} → Transaction Builder, review the decoded calls and decide.</p>
+        <form id="safe-form"><label>Your Safe address<input id="safe-address" pattern="0x[0-9a-fA-F]{40}" placeholder="0x… (a Safe holding source-vault shares)" required></label><label>Proposed destination<select id="safe-destination" required><option value="">Compare destinations first</option></select></label><label>Share of the Safe's source position to move (%)<input id="safe-percent" type="number" min="0.0001" max="100" step="any" placeholder="Blank = proposed fraction"></label><label>Price tolerance (basis points)<input id="safe-tolerance" type="number" min="0" max="500" step="1" value="50"></label><button id="safe-run" type="submit" disabled>Prepare and simulate Safe transaction</button></form>
+        <p class="field-note">Safe accounts only in this version: personal wallets cannot batch atomically. No on-chain deadline exists; a late signature executes at the prices of that moment, protected only by the price floors.</p>
+        <div id="safe-result" aria-live="polite"></div>
+      </details>
     </section>
     <section class="panel coverage-panel" aria-label="Historical model evaluation">
       <div class="panel-heading"><div><p class="eyebrow">HISTORICAL REAL DATA · SUCCESSES AND FAILURES</p><h2>Did the strategy actually help?</h2><p>Frozen training dates and rules, held-out incidents, false alarms, trading-cost sensitivity and recovery outcomes. Price counterfactuals do not prove historical vault withdrawals were possible.</p></div></div>

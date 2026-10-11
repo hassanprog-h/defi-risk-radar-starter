@@ -10,6 +10,7 @@ let automationRun;
 let monitorId;
 let automationTimer;
 let watchedAutomationId;
+let safeAutomationId;
 let renderedCycle;
 let zoom = .85;
 let scene = { width: 1200, height: 660 };
@@ -124,6 +125,13 @@ function renderAutomation(run) {
     }
   }
   if (plan.selected) { select.value = plan.selected.snapshotId; $('fork-fraction').value = String(Math.min(100, plan.selected.moveFraction * 100)); }
+  safeAutomationId = run.id;
+  const safeSelect = $('safe-destination'), proposed = plan.candidates.filter(c => c.status === 'POLICY_CANDIDATE');
+  safeSelect.replaceChildren(element('option', proposed.length ? 'Select a proposed destination' : 'No destination meets the policy'));
+  safeSelect.firstChild.value = '';
+  for (const candidate of proposed) { const option = element('option', `${candidate.label} · move ${(candidate.moveFraction * 100).toFixed(3)}%`); option.value = candidate.snapshotId; safeSelect.append(option); }
+  if (plan.selected) safeSelect.value = plan.selected.snapshotId;
+  $('safe-run').disabled = proposed.length === 0;
   $('run-fork').disabled = select.options.length < 2;
   for (const alert of data.alerts) container.append(element('p', `${alert.type.replaceAll('_', ' ')}: ${alert.explanation}`, 'explanation'));
   for (const fail of data.destinationFailures) container.append(element('p', `${fail.selector}: ${fail.status.replaceAll('_', ' ')}`));
@@ -174,6 +182,39 @@ $('fork-form').addEventListener('submit', async event => {
     }
   } catch (error) { $('fork-result').textContent = `Fork demonstration unavailable: ${error.message}`; }
   finally { $('run-fork').disabled = false; }
+});
+const units = (raw, decimals) => decimals == null ? `${raw} (raw)` : (Number(BigInt(raw)) / 10 ** decimals).toLocaleString("en-US", { maximumFractionDigits: Math.min(decimals, 6) });
+$("safe-form").addEventListener("submit", async event => {
+  event.preventDefault(); if (!safeAutomationId) return;
+  const percent = $("safe-percent").value.trim();
+  $("safe-run").disabled = true; $("safe-result").textContent = "Checking the Safe on-chain, preparing the batch and simulating it as your Safe on a private local fork…";
+  try {
+    const response = await fetch("/api/safe-proposal", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ automationId: safeAutomationId, destinationSnapshotId: $("safe-destination").value, safe: $("safe-address").value.trim(), ...(percent ? { movePercent: Number(percent) } : {}), toleranceBps: Number($("safe-tolerance").value) }) });
+    const job = await response.json(); if (!response.ok) throw new Error(job.error);
+    for (let i = 0; i < 120; i++) {
+      await new Promise(r => setTimeout(r, 1500));
+      const res = await fetch(`/api/jobs/${job.jobId}`); const status = await res.json();
+      if (!res.ok || status.status === "failed") throw new Error(status.error);
+      if (status.status !== "complete") { if (i === 119) throw new Error("The simulation is taking longer than three minutes."); continue; }
+      const { proposal, batch } = status.safeProposal, sim = proposal.simulation, container = $("safe-result"); container.replaceChildren();
+      const ready = proposal.status === "READY_TO_SIGN";
+      container.append(element("h3", ready ? "Ready to sign in your Safe" : "Not executable as proposed"));
+      container.append(element("p", `Safe ${proposal.safe.version} · ${proposal.safe.threshold} of ${proposal.safe.owners.length} signatures required · state at block ${proposal.anchor.number}. Mainnet transactions sent: 0.`));
+      container.append(element("p", `Move ${proposal.sizing.shares} raw source shares (≈ ${units(proposal.previews.assets, proposal.asset.decimals)} ${proposal.asset.symbol ?? "underlying"}) into the destination. Price tolerance ${proposal.bounds.toleranceBps} bps, enforced on-chain.`));
+      if (sim.checks) { const list = element("ul"); for (const [name, ok] of Object.entries(sim.checks)) list.append(element("li", `${name.replace(/([A-Z])/g, " $1").toLowerCase()}: ${ok ? "passed" : "FAILED"}`)); container.append(list); }
+      if (!ready) container.append(element("p", sim.reason ?? `Simulation status: ${sim.status}. No batch file was produced.`, "explanation"));
+      if (batch) {
+        container.append(element("p", "Import in Safe{Wallet}: Apps → Transaction Builder → drag the batch file → check the three decoded calls → Create batch → sign. Other signers then confirm and execute.", "explanation"));
+        const getBatch = element("button", "Download Safe batch (Transaction Builder)"); getBatch.type = "button"; getBatch.addEventListener("click", () => downloadJson(batch, `safe-batch-${proposal.anchor.number}.json`));
+        container.append(getBatch);
+      }
+      const getReport = element("button", "Download proposal report"); getReport.type = "button"; getReport.addEventListener("click", () => downloadJson(proposal, `proposal-report-${proposal.anchor.number}.json`));
+      container.append(getReport);
+      for (const caveat of proposal.caveats) container.append(element("p", caveat, "field-note"));
+      break;
+    }
+  } catch (error) { $("safe-result").textContent = `Safe proposal unavailable: ${error.message}`; }
+  finally { $("safe-run").disabled = !safeAutomationId; }
 });
 function renderForkCosts(container, result) {
   const forced = result.liquidityRoute?.kind === 'MORPHO_V2_PERMISSIONLESS_FORCE_DEALLOCATE_THEN_REDEEM';
@@ -577,7 +618,7 @@ function showReport(data, { skipAssessment = false, preserveInputs = false } = {
     $('probability').value = fixture ? '25' : '';
     $('exit-cost').value = fixture ? '200' : '';
   }
-  if (previousRoot !== report.snapshot.rootPositionId) { $('owner').value = ''; $('fork-owner').value = ''; $('shares').value = ''; automationRun = null; $('run-fork').disabled = true; }
+  if (previousRoot !== report.snapshot.rootPositionId) { $('owner').value = ''; $('fork-owner').value = ''; $('shares').value = ''; automationRun = null; $('run-fork').disabled = true; safeAutomationId = undefined; $('safe-run').disabled = true; }
   $('exit-result').textContent = fixture ? 'Owner-specific checks are available in live mode.' : 'No owner-specific route has been checked.';
   const metadata = $('metadata');
   metadata.replaceChildren();
@@ -793,7 +834,7 @@ function updateSelectionStatus() {
   $('selection-status').textContent = root ? matches ? `Displayed graph: ${root.label} · ${root.address}` : `Selected address has changed. Displayed graph belongs to ${root.label}; fetching or starting automatic analysis will replace it.` : 'No graph loaded yet.';
 }
 function selectionChanged() {
-  automationRun = null; activeQuoteId = undefined;
+  automationRun = null; activeQuoteId = undefined; safeAutomationId = undefined; $('safe-run').disabled = true;
   $('run-fork').disabled = true; $('owner').value = ''; $('fork-owner').value = ''; $('shares').value = '';
   $('fork-result').replaceChildren(); $('holder-result').replaceChildren();
   updateSelectionStatus();
@@ -801,7 +842,7 @@ function selectionChanged() {
 }
 $('vault-address').addEventListener('input', selectionChanged);
 $('chain-id').addEventListener('input', selectionChanged);
-$('assessment-usd').addEventListener('input', () => { automationRun = null; $('run-fork').disabled = true; if (monitorId) $('pipeline-status').textContent = 'Amount changed. Start automatic analysis to restart monitoring with this amount.'; });
+$('assessment-usd').addEventListener('input', () => { automationRun = null; $('run-fork').disabled = true; safeAutomationId = undefined; $('safe-run').disabled = true; if (monitorId) $('pipeline-status').textContent = 'Amount changed. Start automatic analysis to restart monitoring with this amount.'; });
 try {
   const response = await fetch('/api/status'); const status = await response.json();
   if (status.appVersion !== 'automatic-flow-v2') {

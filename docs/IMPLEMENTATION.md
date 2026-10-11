@@ -44,6 +44,7 @@ All routes are under the local loopback host. Keys and upstream credential URLs 
 | `GET /api/automation/<id>` | Current cycle, source/destination snapshots, forecasts, proposal, alerts and optional fork proof |
 | `POST /api/automation/stop` | `{id}` → stop scheduling and prevent later rehearsal |
 | `POST /api/fork-migration` | `{sourceSnapshotId,destinationSnapshotId,owner,positionUsd,moveFraction}` → isolated atomic fork job; no caller-selected execution RPC |
+| `POST /api/safe-proposal` | `{automationId,destinationSnapshotId,safe,movePercent?,toleranceBps?}` → job: Safe checks, unsigned Bundler3 batch, fork simulation; batch returned only when the simulation passes ([details](SAFE_PROPOSALS.md)) |
 | `GET /api/backtest` | Frozen protocol, attributed series metadata, forecast scores, price counterfactuals and chart points |
 | `POST /api/simulate` | Snapshot ID, typed target/scenario, severity/horizon, optional assumed size/probability/cost, optional matching quote ID |
 | `POST /api/quote-exit` | Snapshot ID, public owner address, optional raw shares → direct-redemption assessment and quote ID |

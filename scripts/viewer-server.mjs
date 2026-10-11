@@ -14,6 +14,7 @@ import { assessDependencies } from '../dist/live/assess.js';
 import { api, liveOptions } from './live-config.mjs';
 import { createAutomationService, assessWithForecast } from './automation-service.mjs';
 import { simulateMigration } from './fork-migration.mjs';
+import { runSafeProposal, publicError } from './propose.mjs';
 
 const files = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
@@ -129,6 +130,28 @@ export function createViewerServer() {
           .catch(error => jobs.set(id, { status: 'failed', error: error.message }))
           .finally(() => { forkActive = false; });
         return json(response, 202, { jobId: id, mode: 'LOCAL_FORK_ONLY' });
+      }
+      if (request.method === 'POST' && path === '/api/safe-proposal') {
+        if (forkActive) return json(response, 429, { error: 'A local fork simulation is already running. Wait for it to finish.' });
+        let body, run, candidate;
+        try {
+          body = z.object({ automationId: z.string().uuid(), destinationSnapshotId: z.string().max(400), safe: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
+            movePercent: z.number().finite().positive().max(100).optional(), toleranceBps: z.number().int().min(0).max(500).optional() }).parse(await readBody(request));
+          run = automation.get(body.automationId);
+          // The policy plan is read from server-side state, never trusted from the browser.
+          candidate = run?.result?.allocation?.candidates.find(c => c.snapshotId === body.destinationSnapshotId);
+          if (!run?.result?.allocation || !candidate) throw new Error();
+          if (!(Date.now() - Date.parse(run.result.allocation.createdAt) < 15 * 60_000)) throw new Error();
+        } catch { return json(response, 400, { error: 'Run an automatic comparison first (less than 15 minutes old), then choose one of its proposed destinations and enter your Safe address.' }); }
+        const plan = run.result.allocation;
+        const source = plan.sourceId.split(':')[2], destination = candidate.destinationId.split(':')[2];
+        forkActive = true;
+        const id = randomUUID(); jobs.set(id, { status: 'running' });
+        runSafeProposal({ source, destination, safe: body.safe, plan, moveFraction: body.movePercent === undefined ? undefined : body.movePercent / 100, toleranceBps: body.toleranceBps })
+          .then(result => jobs.set(id, { status: 'complete', safeProposal: result }))
+          .catch(error => jobs.set(id, { status: 'failed', error: publicError(error) }))
+          .finally(() => { forkActive = false; });
+        return json(response, 202, { jobId: id, mode: 'UNSIGNED_SAFE_PROPOSAL' });
       }
       if (request.method === 'POST' && path === '/api/assess') {
         try {
