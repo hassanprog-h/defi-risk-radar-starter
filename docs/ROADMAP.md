@@ -30,6 +30,8 @@ The user's 2026-10-11 conversation with Belem expands the target to automatic fo
 - **Next:** borrower health/liquidation/recovery models, wider independent event coverage and model uncertainty/drift validation; executable cross-asset swap routes and comparable destination loss/yield forecasts; production wallet delegation and audit.
 - **Activation:** mainnet remains read-only until concrete execution, policy and simulation are reviewed and real execution explicitly enabled.
 
+User-reported workflow regression repaired: edited Hyperithm source/amount previously left the graph and monitor on Steakhouse/$10,000, stale exposure checks were not refreshed, and ascending V1 holder selection chose dust accounts. A single automatic action now refreshes the selected source, assesses the entered amount, compares destinations, optionally selects a sufficiently funded public holder and runs a fork test, then monitors. Reload reconnects to the live monitor and restart applies edited settings. The exact stale-source/$100,000 Hyperithm case passed browser acceptance with real data and atomic local-fork execution. Offline checks: 61 passed, one optional live test skipped.
+
 ## Milestone 0 — Executable domain seed (included)
 
 - Typed node/edge model with structural + financial relationship types.

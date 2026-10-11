@@ -2,6 +2,14 @@
 
 Start with `npm run dev` and open the local URL printed by the server. Keep the existing `.env` server-side. No additional data key is needed for the included historical benchmark or public stablecoin feeds.
 
+## One-action automatic flow
+
+Select a vault address, enter your amount, optionally enable **Also automatically test one eligible reallocation on a local Ethereum fork**, and click **Start automatic analysis + monitoring**. It uses the selected address and amount directly, fetches a fresh graph and accounting, checks prices, compares destinations and schedules subsequent five-minute checks. The status line shows the current stage, configured source/amount and next check. If enabled and eligible, it automatically finds a public EOA holder with enough verified shares and runs one bounded fork test. No owner copying is needed for this flow.
+
+Selecting a real example or catalogue entry also starts a live inspection. **Show my exposure** now refreshes the selected vault before calculating; it preserves your amount. Changing a source clears old owner/quote/manual-execution context. Comparisons always use the address currently selected in the form. The page labels the loaded graph's source and the running monitor's configured amount, so changed inputs cannot silently masquerade as an updated monitor.
+
+Reloading the page reconnects to the server's running monitor and restores its source, amount, policy and stop control. Clicking **Start automatic analysis + monitoring** again stops the prior monitor, waits for any ongoing reads to finish, and starts with the new settings. Restarting the server still does not resume monitoring automatically.
+
 ## Live position to proposed reallocation
 
 1. Choose **Hyperithm USDC Apex · V2** under **Real examples** and inspect it. The Ethereum address is `0x093272c07700d3ca5301c3bf9b3a392624179e2f`. Inspection builds the dependency graph from indexed relationships and contract reads; click a node or relationship to inspect evidence and missing coverage.
@@ -16,7 +24,7 @@ This is a concentration policy, not a complete forecast of investment returns. B
 
 Open the local-fork section. **Find a public demo holder** finds somebody else's indexed owner and verifies their actual shares and non-contract account with current reads. It does not give you control of their real wallet.
 
-Place that public address in the fork-owner field and enable the automatic local-fork rehearsal before comparing. Alternatively, select a compatible destination and run the fork demonstration manually. The entered USD position and move fraction determine the amount; they do not select the holder's entire balance. The holder must have enough shares to cover the move and any bounded withdrawal fee.
+The **automatic** flow finds an adequately funded holder itself. **Find a public demo holder** also fills both owner fields and, when an amount is entered, verifies capacity for that amount plus a small fee buffer. For a manual test, select a compatible destination and run the fork demonstration with the entered public owner. The entered USD position and move fraction determine the amount; they do not select the holder's entire balance. The holder must have enough shares to cover the move and any bounded withdrawal fee.
 
 The server starts an isolated Ethereum fork on local chain 31337. It deploys a fixed policy contract as the impersonated owner, approves bounded source shares once, and lets a separate executor perform the migration without another owner action. The contract rejects deployment on mainnet. All transactions are confined to this newly created local node.
 

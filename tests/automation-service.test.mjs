@@ -74,3 +74,20 @@ test('missing dependency price checks cannot enable an automatic rehearsal', asy
     assert.equal(run.result.forkRehearsalStatus, 'DEPENDENCY_PRICE_CHECK_UNAVAILABLE'); assert.equal(run.result.fork, null);
   } finally { service.close(); await rm(directory, { recursive: true, force: true }); }
 });
+test('amount-only automatic setup selects a suitable holder, exposes progress and retains the monitor configuration', async () => {
+  const directory = await mkdtemp('/tmp/radar-automation-test-');
+  let holderSize, executed;
+  const service = createAutomationService({ stateDir: pathToFileURL(directory + '/'), inspect: async selector => graph(selector),
+    assess: async (snapshot, size) => ({ ...assessDependencies(snapshot, size), forecasts: [{ role: 'ACCOUNTING_ASSET', status: 'EXPERIMENTAL_REFERENCE', regime: 'PEGGED' }] }),
+    findHolder: async (_snapshot, size) => { holderSize = size; return { owner: address(9) }; },
+    simulate: async input => { executed = input; return { status: 'FORK_SIMULATION_PASSED', owner: input.owner, mainnetTransactionsSent: 0 }; } });
+  try {
+    const job = service.start({ selector: source, positionUsd: 100000, destinations: [destination], monitor: true, autoFork: true, policy: { maxMarketFraction: .6, maxCollateralFraction: .6, maxMoveFraction: 1 } });
+    assert.equal(service.get(job.id).stage, 'Inspecting selected source vault');
+    const run = await finished(service, job.id);
+    assert.equal(holderSize, 100000); assert.equal(executed.owner, address(9)); assert.equal(executed.positionUsd, 100000);
+    assert.equal(run.selector, source); assert.equal(run.positionUsd, 100000); assert.equal(run.inFlight, false);
+    assert.equal(service.listMonitors()[0].positionUsd, 100000);
+    service.stop(job.id); assert.deepEqual(service.listMonitors(), []);
+  } finally { service.close(); await rm(directory, { recursive: true, force: true }); }
+});

@@ -83,6 +83,9 @@ th { color:var(--mint); } .backtest-chart { width:100%; height:auto; display:blo
 #backtest-result button[aria-pressed=false] { opacity:.5; }
 #fork-form { max-width:580px; }
 #assessment-result h3 { margin-top:20px; }
+.automatic-option { margin:14px 20px; font-size:12px; }
+.pipeline-status { margin:16px 20px; padding:12px; border:1px solid var(--line); border-radius:8px; color:var(--mint); overflow-wrap:anywhere; }
+#selection-status { margin:0 20px 16px; overflow-wrap:anywhere; }
 .graph-tools .checkbox { max-width:none; white-space:normal; }
 @media(max-width:1150px) { .workspace { grid-template-columns:1fr; } .scenario-panel { max-width:none; } .input-pair { max-width:450px; } }
 @media(max-width:650px) { main { padding:22px 14px; } .intro { align-items:start; flex-direction:column; } .panel-heading { padding:14px; flex-wrap:wrap; } #graph-container { height:420px; } .badge { font-size:9px; } .legend { padding:12px; } .evidence-facts { grid-template-columns:85px 1fr; } .address-input { min-width:200px; } .graph-tools { flex-wrap:wrap; } }

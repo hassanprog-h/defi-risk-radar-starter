@@ -18,13 +18,15 @@
       <form id="inspect-form" class="discovery-form"><label>Chain ID<input id="chain-id" type="number" min="1" value="1" required></label><label class="address-input">Vault address<input id="vault-address" value="0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB" pattern="0x[0-9a-fA-F]{40}" required></label><button id="inspect" class="primary" type="submit">Inspect live vault</button><button id="fixture" type="button">Load fixture demo</button></form>
       <div class="catalogue-controls"><label>Real examples<select id="example"><option value="1:0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB">Steakhouse USDC · V1</option><option value="1:0x2371e134e3455e0593363cBF89d3b6cf53740618">Gauntlet WETH Prime · V1</option><option value="1:0x04422053aDDbc9bB2759b248B574e3FCA76Bc145">Keyrock USDC · V2 + Pendle</option><option value="1:0x093272c07700d3ca5301c3bf9b3a392624179e2f">Hyperithm USDC Apex · V2</option></select></label><label>Morpho catalogue<select id="catalogue-version"><option value="1">Vault V1</option><option value="2">Vault V2</option></select></label><label class="catalogue-choice">Listed vaults<select id="catalogue"><option value="">Load the catalogue to choose a vault…</option></select></label><button id="load-catalogue">Load catalogue</button><button id="more-catalogue" hidden>More vaults</button></div>
       <div class="catalogue-controls"><label>Stress-test a saved graph (historical recording)<input id="recording" type="file" accept="application/json,.json"></label><span>Use Download graph JSON to save your own recording.</span></div>
-      <p id="activity" aria-live="polite"></p>
+      <p id="activity" aria-live="polite"></p><p id="selection-status" class="field-note" aria-live="polite"></p>
     </section>
     <div class="metadata" id="metadata">Waiting for discovery…</div>
     <section class="panel coverage-panel" id="automatic-panel" aria-label="Automatic dependency checks">
       <div class="panel-heading"><div><p class="eyebrow">EXPOSURE · LIVE PRICE CHECKS · RESEARCH FORECAST</p><h2>Where your vault invests your money</h2><p>Enter your position value to measure market exposure and automatically check supported stablecoin dependencies. Price forecasts are experimental; exploit probabilities remain unknown.</p></div></div>
-      <form id="assessment-form" class="discovery-form"><label>Your position value ($)<input id="assessment-usd" type="number" min="0.01" max="1000000000000" step="any" placeholder="e.g. 10000" required></label><button id="assess" class="primary" type="submit" disabled>Show my exposure</button></form>
-      <p class="field-note">Uses the data from your last vault inspection. Click <strong>Inspect live vault</strong> to fetch new balances and rebuild the graph.</p>
+      <form id="assessment-form" class="discovery-form"><label>Your position value ($)<input id="assessment-usd" type="number" min="0.01" max="1000000000000" step="any" placeholder="e.g. 10000" required></label><button id="run-automatic" class="primary" type="button">Start automatic analysis + monitoring</button><button id="assess" type="submit" disabled>Show my exposure</button></form>
+      <label class="checkbox automatic-option"><input id="auto-fork" type="checkbox"> Also automatically test one eligible reallocation on a local Ethereum fork</label>
+      <p class="field-note">Start automatic analysis uses the selected vault address and this amount, refreshes the graph and prices, compares destinations and keeps monitoring. The optional fork test selects a public holder with enough shares automatically. Mainnet funds remain untouched.</p>
+      <p id="pipeline-status" class="pipeline-status" aria-live="polite">Ready: select a vault and enter your amount.</p>
       <div id="assessment-result" aria-live="polite">Inspect a vault to see its allocations.</div>
     </section>
     <section class="panel coverage-panel" aria-label="Automatic monitoring and reallocation">
@@ -43,8 +45,7 @@
       <details id="fork-panel"><summary>Demonstrate permission-bound execution on a local fork</summary>
         <p>Deploy a fork-only policy contract, grant a bounded share allowance once, then let an executor redeem and deposit atomically. The entered USD size is converted to actual public-holder shares using fresh reference prices; local ETH pays test gas. It creates no real wallet permission and moves no mainnet money.</p>
         <form id="fork-form"><label>Public source-vault holder (EOA)<input id="fork-owner" pattern="0x[0-9a-fA-F]{40}" placeholder="Use the verified public holder below" required></label><label>Destination<select id="fork-destination" required><option value="">Compare destinations first</option></select></label><label>Fraction of entered position value to migrate (%)<input id="fork-fraction" type="number" min="0.0001" max="100" step="any" value="100" required></label><button id="run-fork" type="submit" disabled>Run atomic migration on local fork</button></form>
-        <label class="checkbox"><input id="auto-fork" type="checkbox"> Automatically rehearse one policy-selected move on a local fork when comparison or monitoring starts</label>
-        <p class="field-note">Uses the public holder above. One attempt per setup; stops if no eligible destination or an observed underlying depeg remains unhedged. This never creates a mainnet permission.</p>
+        <p class="field-note">Automatic fork testing is enabled above and finds a suitably funded holder itself. This form is a separate manual test using the entered public owner. One automatic attempt per setup; no mainnet permission is created.</p>
         <div id="fork-result" aria-live="polite"></div>
       </details>
     </section>
@@ -82,6 +83,6 @@
     <section class="panel coverage-panel"><div class="panel-heading"><div><p class="eyebrow">DISCOVERY COVERAGE</p><h2>Evidence and unresolved dependencies</h2></div></div><div id="coverage"></div></section>
     <section class="panel evidence-panel"><div class="panel-heading"><div><p class="eyebrow">SOURCE &amp; RELATIONSHIPS</p><h2 id="selection-title">Select a node or relationship</h2></div><span id="evidence-badge" class="badge">SOURCE EVIDENCE</span></div><div id="evidence"></div></section>
   </main>
-  <footer>Read-only prototype · No wallet connection or transaction execution · Financial assumptions are illustrative.</footer>
+  <footer>Mainnet reads only · Local-fork execution demonstrations · Experimental forecasts and explicit assumptions.</footer>
 </body>
 </html>

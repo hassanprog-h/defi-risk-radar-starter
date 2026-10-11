@@ -8,6 +8,7 @@ Public exchange market candles, downloaded for this hackathon research benchmark
 - `backtest-report.json`: reproducible model/benchmark metrics, missed and false alarms, all cost cases, isolated-print flags and chart points.
 - `fork-migration-recording.json`: timestamped real-vault local-fork execution proof, including bounded forced-liquidity withdrawal, fee accounting and seven permission rejection checks.
 - `automatic-reallocation-recording.json`: the complete successful automatic dashboard cycle, retaining source/destination graph evidence, observations, experimental forecasts, proposal and local-fork proof. This is a historical recording, not current feasibility or verified post-move concentration compliance. Mainnet transactions sent: zero.
+- `automatic-reallocation-repair.json`: acceptance evidence for the reported wrong-source/amount/insufficient-holder regression, using a $100,000 entered Hyperithm position and automatic capacity-verified public-holder selection. Historical fork state only; no current feasibility or validated financial recommendation.
 
 No forward filling. Data gaps and delisting are preserved. Historical retrieval today is not an archive of what an API published at the historical decision date. Chronological features and training labels respect their availability times; current graph snapshots are not attached to 2022/2023 prices.
 

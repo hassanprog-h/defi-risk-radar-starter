@@ -141,7 +141,7 @@ export class MorphoClient {
         positions(first:20,where:{shares_gte:"1"}) { items { user { address } shares } }
       }
     }` : `query PublicHolders($address:String!,$chainId:Int!) {
-      vaultPositions(first:20,orderBy:Shares,orderDirection:Asc,where:{vaultAddress_in:[$address],chainId_in:[$chainId],shares_gte:"1"}) {
+      vaultPositions(first:20,orderBy:Shares,orderDirection:Desc,where:{vaultAddress_in:[$address],chainId_in:[$chainId],shares_gte:"1"}) {
         items { user { address } state { shares } vault { address chain { id } } }
       }
     }`;

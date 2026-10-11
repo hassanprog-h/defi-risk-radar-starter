@@ -14,6 +14,10 @@ The application runs one local Node HTTP server and a buildless SVG/JavaScript f
 
 `src/automation/force-route.ts` handles verified direct Morpho V2 market withdrawals when the source has no default liquidity adapter and insufficient idle funds. Fixed adapter/market identity, available liquidity, route amount and penalty limits are checked; the atomic contract counts penalty shares toward spending limits. Other vaults use actual direct-redemption simulation. Dollar sizing uses fresh asset prices, and fork gas pricing includes the pinned block's base-fee floor.
 
+The automatic UI submits the selected source address and amount directly, rather than reusing the loaded graph's root. `autoFork` requests automatic capacity-aware public-holder lookup; manual execution continues to use an explicitly supplied owner. Holder discovery uses descending V1 indexed shares, verifies on-chain balance and EOA code, and, when sized, requires a fresh reference price and sufficient `previewWithdraw` shares plus a 0.02% buffer. Search is bounded to 20 candidates and never manufactures balances.
+
+Monitoring exposes stage, configured source/amount, current source snapshot and in-flight status. `GET /api/automation` lists active local monitors so reload restores controls; `GET /api/automation/:id` returns the source report for graph refresh. Restart waits for stopped reads to finish. Newer manually inspected graphs are not replaced by older completed-cycle reports. The client requires `appVersion: automatic-flow-v2` and tells users to restart an old server instead of mixing new UI with an old backend. Server restarts still do not resume persisted monitoring automatically.
+
 ## Files and responsibilities
 
 - `src/core`: original fixture types, bounded reverse traversal, illustrative simulator and decision seed.

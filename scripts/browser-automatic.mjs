@@ -1,0 +1,75 @@
+import assert from 'node:assert/strict';
+import { writeFile } from 'node:fs/promises';
+import { chromium } from '@playwright/test';
+import { createViewerServer } from './viewer-server.mjs';
+
+const source = '0x093272c07700d3ca5301c3bf9b3a392624179e2f';
+const server = createViewerServer();
+await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
+const base = `http://127.0.0.1:${server.address().port}`;
+let browser;
+try {
+  browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}), args: ['--no-sandbox'] });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  page.setDefaultTimeout(300000);
+  const errors = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto(base);
+  await page.waitForFunction(() => document.querySelector('g.node.vault') && !document.getElementById('inspect').disabled);
+  assert.match(await page.locator('#selection-status').innerText(), /Steakhouse/);
+  // Reproduce the user's mismatch: edit the source while the old graph is still displayed.
+  await page.locator('#vault-address').fill(source);
+  await page.locator('#assessment-usd').fill('100000');
+  await page.locator('#auto-fork').check();
+  assert.match(await page.locator('#selection-status').innerText(), /Selected address has changed/);
+  assert.equal(await page.locator('#fork-owner').inputValue(), '');
+  const started = page.waitForResponse(r => r.url().endsWith('/api/automation') && r.request().method() === 'POST');
+  await page.locator('#run-automatic').click();
+  const response = await started; const job = await response.json();
+  assert.equal(response.request().postDataJSON().selector, `1:${source}`);
+  assert.equal(response.request().postDataJSON().positionUsd, 100000);
+  assert.equal(response.request().postDataJSON().autoFork, true);
+  assert.equal(response.request().postDataJSON().forkDemoOwner, undefined);
+  console.log('Selected source and $100,000 submitted; waiting for automatic analysis and fork execution.');
+  const complete = await page.waitForResponse(async r => {
+    if (!r.url().endsWith(`/api/automation/${job.id}`)) return false;
+    return ['complete', 'failed'].includes((await r.json()).status);
+  });
+  const run = await complete.json();
+  await writeFile('/tmp/radar-automatic-repair.json', JSON.stringify(run.result, null, 2));
+  assert.equal(run.status, 'complete', run.error);
+  assert.equal(run.result.source.rootPositionId, `eip155:1:${source}`);
+  assert.equal(run.result.allocation.positionUsd, 100000);
+  assert.equal(run.result.assessment.accountingUsable, true);
+  assert.equal(run.result.fork?.status, 'FORK_SIMULATION_PASSED', run.result.fork?.error ?? run.result.forkRehearsalStatus);
+  assert.equal(run.result.fork.sizing.positionUsd, 100000);
+  assert.equal(run.result.fork.mainnetTransactionsSent, 0);
+  await page.waitForFunction(() => document.getElementById('pipeline-status').textContent.includes('Cycle complete'));
+  assert.equal(await page.locator('#assessment-usd').inputValue(), '100000');
+  assert.match(await page.locator('#selection-status').innerText(), /Hyperithm/);
+  assert.match(await page.locator('#automation-result').innerText(), /\$100,000\.00/);
+  assert.match(await page.locator('#assessment-result').innerText(), /\$100,000\.00/);
+  assert.match(await page.locator('#fork-owner').inputValue(), /^0x[0-9a-f]{40}$/);
+  console.log('Automatic graph, exposure, proposal, suitable holder and fork migration passed.');
+  await page.reload();
+  await page.waitForFunction(() => !document.getElementById('stop-monitor').disabled && document.getElementById('pipeline-status').textContent.includes('Cycle complete'));
+  assert.equal(await page.locator('#vault-address').inputValue(), source);
+  assert.equal(await page.locator('#assessment-usd').inputValue(), '100000');
+  // Restart with a changed amount; prior monitor must stop and the new amount must reach the server.
+  await page.locator('#assessment-usd').fill('20000'); await page.locator('#auto-fork').uncheck();
+  const restarted = page.waitForResponse(r => r.url().endsWith('/api/automation') && r.request().method() === 'POST');
+  await page.locator('#run-automatic').click(); const next = await (await restarted).json();
+  assert.notEqual(next.id, job.id);
+  assert.equal((await (await fetch(`${base}/api/automation/${job.id}`)).json()).stopped, true);
+  const nextResponse = await page.waitForResponse(async r => r.url().endsWith(`/api/automation/${next.id}`) && ['complete', 'failed'].includes((await r.json()).status));
+  const second = await nextResponse.json();
+  assert.equal(second.status, 'complete'); assert.equal(second.positionUsd, 20000); assert.equal(second.result.allocation.positionUsd, 20000);
+  await page.locator('#stop-monitor').click();
+  await page.waitForFunction(() => document.getElementById('stop-monitor').disabled);
+  assert.equal((await (await fetch(`${base}/api/automation/${next.id}`)).json()).nextAt, null);
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+  await page.screenshot({ path: '/tmp/radar-automatic-repair.png', fullPage: true });
+  assert.deepEqual(errors, []);
+  for (const secret of [process.env.ETHEREUM_RPC_URL, process.env.ETHERSCAN_API_KEY]) if (secret) assert.equal(JSON.stringify(run).includes(secret), false);
+  console.log(JSON.stringify({ automatic: 'passed', sourceSelection: 'passed', positionSizing: 'passed', fundedHolder: 'passed', atomicFork: 'passed', reloadReconnect: 'passed', restartAmount: 'passed', monitoringStop: 'passed', mobile: 'passed', mainnetTransactions: 0 }, null, 2));
+} finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

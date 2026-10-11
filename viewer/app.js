@@ -9,6 +9,8 @@ let assessmentSequence = 0;
 let automationRun;
 let monitorId;
 let automationTimer;
+let watchedAutomationId;
+let renderedCycle;
 let zoom = .85;
 let scene = { width: 1200, height: 660 };
 
@@ -39,40 +41,73 @@ function renderForecasts(container, forecasts) {
   }
 }
 
-async function startAutomation(monitor) {
+const selectedSelector = () => `${$('chain-id').value}:${$('vault-address').value.trim().toLowerCase()}`;
+async function stopOwnedMonitor() {
+  if (!monitorId) return;
+  const id = monitorId;
+  const response = await fetch('/api/automation/stop', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) });
+  if (!response.ok) throw new Error('Could not stop the previous monitor.');
+  monitorId = null; watchedAutomationId = null; clearTimeout(automationTimer); $('stop-monitor').disabled = true;
+  for (let i = 0; i < 120; i++) {
+    const status = await (await fetch(`/api/automation/${id}`)).json();
+    if (!status.inFlight) return;
+    $('pipeline-status').textContent = 'The previous monitor is stopping; waiting for its current read to finish…';
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  throw new Error('Previous data reads are still finishing. Retry shortly.');
+}
+async function startAutomation(monitor, primary = false) {
   const size = Number($('assessment-usd').value);
-  if (!report || report.snapshot.mode !== 'live' || !Number.isFinite(size) || size <= 0) { $('automation-result').textContent = 'Inspect a live Ethereum vault and enter a positive position value above.'; return; }
+  const selector = selectedSelector();
+  if (!/^1:0x[0-9a-f]{40}$/.test(selector) || !Number.isFinite(size) || size <= 0) { $('pipeline-status').textContent = 'Enter a valid Ethereum vault address and a positive position value.'; return; }
   const destinations = $('destination-addresses').value.split(/\s+/).filter(Boolean).map(address => `1:${address}`);
   const policy = { maxMarketFraction: Number($('limit-market').value) / 100, maxCollateralFraction: Number($('limit-collateral').value) / 100, maxMoveFraction: Number($('limit-move').value) / 100 };
   $('compare-destinations').disabled = true; $('start-monitor').disabled = true;
+  $('run-automatic').disabled = true;
   $('automation-result').textContent = 'Refreshing source accounting, candidate vaults and live prices. This can take a few minutes…';
   try {
-    const root = report.snapshot.nodes.find(n => n.id === report.snapshot.rootPositionId);
-    const response = await fetch('/api/automation', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ selector: `${report.snapshot.chainId}:${root.address}`, positionUsd: size, destinations, policy, monitor, ...($('auto-fork').checked ? { forkDemoOwner: $('fork-owner').value.trim() } : {}) }) });
+    await stopOwnedMonitor();
+    ++activeInspection; ++assessmentSequence; $('inspect').disabled = false;
+    const response = await fetch('/api/automation', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ selector, positionUsd: size, destinations, policy, monitor, autoFork: $('auto-fork').checked, enrichment: primary }) });
     const job = await response.json(); if (!response.ok) throw new Error(job.error);
     if (monitor) { monitorId = job.id; $('stop-monitor').disabled = false; }
+    watchedAutomationId = job.id; renderedCycle = undefined;
+    $('pipeline-status').textContent = `Starting ${selector} · ${money(size)} · ${monitor ? 'monitoring enabled' : 'one comparison'}.`;
     clearTimeout(automationTimer);
     pollAutomation(job.id);
   } catch (error) {
     $('automation-result').textContent = error.message;
+    $('pipeline-status').textContent = error.message;
+    $('run-automatic').disabled = false;
     $('compare-destinations').disabled = false; $('start-monitor').disabled = Boolean(monitorId);
   }
 }
 async function pollAutomation(id) {
   try {
     const response = await fetch(`/api/automation/${id}`); const run = await response.json();
+    if (id !== watchedAutomationId) return;
     if (!response.ok) throw new Error(run.error);
-    if (run.result) { automationRun = run.result; renderAutomation(run); }
+    const sameSelection = run.selector.toLowerCase() === selectedSelector() && Number($('assessment-usd').value) === run.positionUsd;
+    $('pipeline-status').textContent = `${run.stage ?? run.status} · ${run.selector} · configured amount ${money(run.positionUsd)}${run.nextAt ? ` · next check ${new Date(run.nextAt).toLocaleTimeString()}` : ''}${sameSelection ? '' : ' · Inputs changed: restart automatic analysis to apply them.'}`;
+    const newerGraph = run.report && (!report || report.snapshot.rootPositionId !== run.report.snapshot.rootPositionId || Date.parse(run.report.snapshot.observedAt) >= Date.parse(report.snapshot.observedAt));
+    if (sameSelection && newerGraph && report?.snapshot.snapshotId !== run.report.snapshot.snapshotId) showReport(run.report, { skipAssessment: true, preserveInputs: true });
+    if (run.result) {
+      automationRun = sameSelection ? run.result : null; renderAutomation(run);
+      if (sameSelection && run.source?.snapshotId === run.result.source.snapshotId && renderedCycle !== `${id}:${run.cycles}`) { renderedCycle = `${id}:${run.cycles}`; renderAssessment(run.result.assessment, run.positionUsd); }
+      if (sameSelection && run.result.fork?.owner) { $('fork-owner').value = run.result.fork.owner; $('owner').value = run.result.fork.owner; }
+    }
     if (run.status === 'failed') $('automation-result').textContent = `${run.error}${run.nextAt ? ` Retry at ${run.nextAt}.` : ''}`;
     if (run.status === 'running' || run.monitor && !run.stopped) automationTimer = setTimeout(() => pollAutomation(id), run.status === 'running' ? 2000 : 5000);
     else { $('compare-destinations').disabled = false; $('start-monitor').disabled = Boolean(monitorId); }
+    if (run.status !== 'running') $('run-automatic').disabled = false;
     if (run.status === 'complete') { $('compare-destinations').disabled = false; $('start-monitor').disabled = Boolean(monitorId); }
-  } catch (error) { $('automation-result').textContent = `Automation status unavailable: ${error.message}`; $('compare-destinations').disabled = false; }
+  } catch (error) { $('automation-result').textContent = `Automation status unavailable: ${error.message}`; $('compare-destinations').disabled = false; $('run-automatic').disabled = false; }
 }
 function renderAutomation(run) {
   const data = run.result, plan = data.allocation, container = $('automation-result'); container.replaceChildren();
   const root = data.source.nodes.find(n => n.id === data.source.rootPositionId);
   container.append(element('h3', `${root.label} · ${plan.status.replaceAll('_', ' ')}`));
+  container.append(element('p', `Analysed source: ${root.address} · configured position ${money(plan.positionUsd)}.`, 'explanation'));
   container.append(element('p', `Cycle ${data.cycle} · fresh source block ${data.source.blockNumber} · ${data.completedAt}${run.nextAt ? ` · next check ${run.nextAt}` : ''}`));
   container.append(element('p', plan.objective));
   if (plan.baseline) container.append(element('p', `Largest market: ${(plan.baseline.largestMarket * 100).toFixed(2)}%. Largest collateral dependency: ${(plan.baseline.largestCollateral * 100).toFixed(2)}%.`));
@@ -102,12 +137,14 @@ function renderAutomation(run) {
 }
 $('automation-form').addEventListener('submit', event => { event.preventDefault(); startAutomation(false); });
 $('start-monitor').addEventListener('click', () => startAutomation(true));
+$('run-automatic').addEventListener('click', () => startAutomation(true, true));
 $('stop-monitor').addEventListener('click', async () => {
   if (!monitorId) return;
   try {
     const response = await fetch('/api/automation/stop', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: monitorId }) });
     if (!response.ok) throw new Error('Stop request failed');
-    monitorId = null; clearTimeout(automationTimer); $('stop-monitor').disabled = true; $('start-monitor').disabled = false; $('compare-destinations').disabled = false;
+    monitorId = null; watchedAutomationId = null; clearTimeout(automationTimer); $('stop-monitor').disabled = true; $('start-monitor').disabled = false; $('compare-destinations').disabled = false; $('run-automatic').disabled = false;
+    $('pipeline-status').textContent = 'Monitoring stopped. No further cycles will be scheduled.';
     $('automation-result').append(element('p', 'Monitoring stopped. No further cycles will be scheduled.'));
   } catch (error) { $('automation-result').append(element('p', error.message)); }
 });
@@ -515,7 +552,8 @@ async function refreshScenario() {
   if (saved['assessment-usd']) assessSnapshot(Number(saved['assessment-usd']));
   await applyScenario();
 }
-function showReport(data) {
+function showReport(data, { skipAssessment = false, preserveInputs = false } = {}) {
+  const previousRoot = report?.snapshot.rootPositionId;
   report = data;
   selected = undefined;
   activeQuoteId = undefined;
@@ -523,10 +561,10 @@ function showReport(data) {
   const replay = report.snapshot.mode === 'historical_replay';
   $('automatic-panel').hidden = fixture;
   $('assess').disabled = fixture;
-  $('assessment-usd').value = '';
   $('assessment-result').replaceChildren();
   if (fixture) { ++assessmentSequence; $('advanced-scenario').open = true; }
-  else assessSnapshot(null);
+  else if (skipAssessment) { ++assessmentSequence; $('assessment-result').textContent = 'Fresh graph received. Automatic price checks and exposure calculation are in progress…'; }
+  else { const size = Number($('assessment-usd').value); assessSnapshot(size > 0 ? size : null); }
   $('mode-badge').textContent = fixture ? 'FIXTURE DEMO' : replay ? 'HISTORICAL RECORDING' : 'LIVE SNAPSHOT';
   $('evidence-badge').textContent = fixture ? 'FIXTURE EVIDENCE ONLY' : 'SOURCE EVIDENCE';
   $('mode-notice').textContent = fixture ? 'ILLUSTRATIVE DATA: fabricated relationships and balances for testing; no live data in this fixture.' : replay ? 'HISTORICAL RECORDING: saved provider observations, with original timestamps. Schema validation does not authenticate imported evidence. Scenarios are hypothetical; current exit decisions are disabled.' : 'LIVE SNAPSHOT: timestamped dependencies and capital allocations. Automatic price assessments and concentration proposals are available below; forecasting is experimental and execution is local-fork only. Advanced stress tests use assumed severity and probability.';
@@ -534,9 +572,12 @@ function showReport(data) {
   $('find-holder').disabled = fixture || replay;
   $('holder-result').textContent = '';
   $('position-usd').disabled = fixture;
-  $('position-usd').value = fixture ? report.snapshot.rootPositionUsd : '';
-  $('probability').value = fixture ? '25' : '';
-  $('exit-cost').value = fixture ? '200' : '';
+  if (!preserveInputs) {
+    $('position-usd').value = fixture ? report.snapshot.rootPositionUsd : $('assessment-usd').value;
+    $('probability').value = fixture ? '25' : '';
+    $('exit-cost').value = fixture ? '200' : '';
+  }
+  if (previousRoot !== report.snapshot.rootPositionId) { $('owner').value = ''; $('fork-owner').value = ''; $('shares').value = ''; automationRun = null; $('run-fork').disabled = true; }
   $('exit-result').textContent = fixture ? 'Owner-specific checks are available in live mode.' : 'No owner-specific route has been checked.';
   const metadata = $('metadata');
   metadata.replaceChildren();
@@ -552,6 +593,7 @@ function showReport(data) {
   renderCoverage();
   $('simulate').disabled = $('target').options.length === 0;
   $('export').disabled = false;
+  updateSelectionStatus();
 }
 
 async function assessSnapshot(positionUsd) {
@@ -564,6 +606,14 @@ async function assessSnapshot(positionUsd) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
     if (sequence !== assessmentSequence || report.snapshot.snapshotId !== snapshotId) return;
+    renderAssessment(data, positionUsd);
+  } catch (error) {
+    if (sequence === assessmentSequence && report.snapshot.snapshotId === snapshotId) $('assessment-result').textContent = `Automatic checks unavailable: ${error.message}`;
+  } finally {
+    if (sequence === assessmentSequence && report.snapshot.snapshotId === snapshotId) $('assess').disabled = false;
+  }
+}
+function renderAssessment(data, positionUsd) {
     const container = $('assessment-result'); container.replaceChildren();
     container.append(element('p', `Data collected ${new Date(data.observedAt).toLocaleString()}. Your amount is split across lending markets in the same proportions as the vault.`, 'explanation'));
     if (data.concentrations.length) {
@@ -594,16 +644,12 @@ async function assessSnapshot(positionUsd) {
     }
     for (const unknown of data.unknowns) list.append(element('li', unknown));
     details.append(list, element('p', data.explanation)); container.append(details);
-  } catch (error) {
-    if (sequence === assessmentSequence && report.snapshot.snapshotId === snapshotId) $('assessment-result').textContent = `Automatic checks unavailable: ${error.message}`;
-  } finally {
-    if (sequence === assessmentSequence && report.snapshot.snapshotId === snapshotId) $('assess').disabled = false;
-  }
 }
-$('assessment-form').addEventListener('submit', event => {
+$('assessment-form').addEventListener('submit', async event => {
   event.preventDefault();
-  if (!report || report.snapshot.mode === 'fixture') return;
   const size = Number($('assessment-usd').value);
+  if (!Number.isFinite(size) || size <= 0) return;
+  if (!await inspectLive({ skipAssessment: true })) return;
   $('position-usd').value = String(size);
   assessSnapshot(size);
 });
@@ -640,7 +686,7 @@ $('node-search').addEventListener('change', () => {
   $('graph-container').scrollTo(Math.max(0, location.x * zoom - 80), Math.max(0, location.y * zoom - 180));
 });
 let activeInspection = 0;
-async function inspectLive() {
+async function inspectLive(options = {}) {
   const sequence = ++activeInspection;
   $('inspect').disabled = true; $('simulate').disabled = true; $('error').textContent = '';
   $('activity').textContent = 'Discovering allocations, checking contract configuration and tracing upstream dependencies…';
@@ -653,7 +699,7 @@ async function inspectLive() {
       if (sequence !== activeInspection) return;
       const statusResponse = await fetch(`/api/jobs/${job.jobId}`); const status = await statusResponse.json();
       if (!statusResponse.ok || status.status === 'failed') throw new Error(status.error);
-      if (status.status === 'complete') { showReport(status.report); $('activity').textContent = `${status.report.snapshot.protocol}: ${status.report.snapshot.nodes.length} nodes and ${status.report.snapshot.edges.length} relationships. Select a node to inspect the evidence.`; return true; }
+      if (status.status === 'complete') { showReport(status.report, options); $('activity').textContent = `${status.report.snapshot.protocol}: ${status.report.snapshot.nodes.length} nodes and ${status.report.snapshot.edges.length} relationships. Select a node to inspect the evidence.`; return true; }
     }
     throw new Error('Inspection is taking longer than three minutes. Retry after checking provider status.');
   } catch (error) { $('activity').textContent = `Live inspection failed: ${error.message}. Use Load fixture demo for the separate illustrative example.`; return false; }
@@ -663,11 +709,12 @@ $('inspect-form').addEventListener('submit', event => { event.preventDefault(); 
 $('example').addEventListener('change', () => {
   const [chainId, address] = $('example').value.split(':');
   $('chain-id').value = chainId; $('vault-address').value = address;
-  $('activity').textContent = 'Example selected. Inspect live vault rebuilds its graph from provider data.';
+  selectionChanged();
+  inspectLive();
 });
 $('fixture').addEventListener('click', async () => {
   ++activeInspection; $('inspect').disabled = false;
-  try { const response = await fetch('/api/demo'); if (!response.ok) throw new Error('Fixture unavailable'); showReport(await response.json()); $('activity').textContent = 'Fixture loaded explicitly. Select Inspect live vault to return to current provider data.'; }
+  try { await stopOwnedMonitor(); const response = await fetch('/api/demo'); if (!response.ok) throw new Error('Fixture unavailable'); showReport(await response.json()); $('activity').textContent = 'Fixture loaded explicitly. Select Inspect live vault to return to current provider data.'; }
   catch (error) { $('activity').textContent = error.message; }
 });
 $('recording').addEventListener('change', async () => {
@@ -675,6 +722,7 @@ $('recording').addEventListener('change', async () => {
   if (!file) return;
   ++activeInspection; $('inspect').disabled = false;
   try {
+    await stopOwnedMonitor();
     if (file.size > 2_000_000) throw new Error('Recording exceeds 2 MB');
     const response = await fetch('/api/replay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: await file.text() });
     const result = await response.json(); if (!response.ok) throw new Error(result.error);
@@ -697,7 +745,7 @@ async function catalogue(more = false) {
 }
 $('load-catalogue').addEventListener('click', () => catalogue());
 $('more-catalogue').addEventListener('click', () => catalogue(true));
-$('catalogue').addEventListener('change', () => { if ($('catalogue').value.startsWith('0x')) $('vault-address').value = $('catalogue').value; });
+$('catalogue').addEventListener('change', () => { if ($('catalogue').value.startsWith('0x')) { $('vault-address').value = $('catalogue').value; selectionChanged(); inspectLive(); } });
 $('catalogue-version').addEventListener('change', () => { cursor = undefined; $('more-catalogue').hidden = true; $('catalogue').replaceChildren(element('option', 'Load the catalogue for this version…')); });
 $('chain-id').addEventListener('change', () => { cursor = undefined; $('more-catalogue').hidden = true; $('catalogue').replaceChildren(element('option', 'Load the catalogue for this chain…')); });
 $('exit-form').addEventListener('submit', async event => {
@@ -722,12 +770,13 @@ $('find-holder').addEventListener('click', async () => {
   $('find-holder').disabled = true;
   $('holder-result').textContent = 'Finding an indexed public holder and checking its current balance…';
   try {
-    const response = await fetch('/api/public-holder', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ snapshotId }) });
+    const size = Number($('assessment-usd').value);
+    const response = await fetch('/api/public-holder', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ snapshotId, ...(size > 0 ? { positionUsd: size } : {}) }) });
     const holder = await response.json(); if (!response.ok) throw new Error(holder.error);
     if (report.snapshot.snapshotId !== snapshotId) return;
     if (activeQuoteId) $('result').replaceChildren(element('p', 'Public holder changed. Check redemption again or apply the scenario without a quote.', 'explanation'));
-    activeQuoteId = undefined; $('owner').value = holder.owner; $('shares').value = '';
-    $('holder-result').textContent = `Public example selected; this is not your wallet. Balance verified at block ${holder.sourceBlock}.`;
+    activeQuoteId = undefined; $('owner').value = holder.owner; $('fork-owner').value = holder.owner; $('shares').value = '';
+    $('holder-result').textContent = `Public example for this vault selected; this is not your wallet. Balance verified at block ${holder.sourceBlock}${holder.requestedPositionUsd ? ` and covers ${money(holder.requestedPositionUsd)}` : ''}.`;
     $('exit-result').textContent = 'Click Check withdrawal and estimate gas to assess this holder’s full position.';
   } catch (error) { if (report.snapshot.snapshotId === snapshotId) $('holder-result').textContent = error.message; }
   finally { $('find-holder').disabled = report.snapshot.mode !== 'live'; }
@@ -738,8 +787,37 @@ for (const id of ['owner', 'shares']) $(id).addEventListener('input', () => {
   activeQuoteId = undefined;
   $('exit-result').textContent = 'Position changed. Check redemption again to use a quote for this owner and amount.';
 });
+function updateSelectionStatus() {
+  const root = report?.snapshot.nodes.find(n => n.id === report.snapshot.rootPositionId);
+  const matches = root && `${report.snapshot.chainId}:${root.address?.toLowerCase()}` === selectedSelector();
+  $('selection-status').textContent = root ? matches ? `Displayed graph: ${root.label} · ${root.address}` : `Selected address has changed. Displayed graph belongs to ${root.label}; fetching or starting automatic analysis will replace it.` : 'No graph loaded yet.';
+}
+function selectionChanged() {
+  automationRun = null; activeQuoteId = undefined;
+  $('run-fork').disabled = true; $('owner').value = ''; $('fork-owner').value = ''; $('shares').value = '';
+  $('fork-result').replaceChildren(); $('holder-result').replaceChildren();
+  updateSelectionStatus();
+  if (monitorId) $('pipeline-status').textContent = 'Inputs changed. The existing monitor keeps its original configuration; Start automatic analysis restarts it with your selected vault and amount.';
+}
+$('vault-address').addEventListener('input', selectionChanged);
+$('chain-id').addEventListener('input', selectionChanged);
+$('assessment-usd').addEventListener('input', () => { automationRun = null; $('run-fork').disabled = true; if (monitorId) $('pipeline-status').textContent = 'Amount changed. Start automatic analysis to restart monitoring with this amount.'; });
 try {
   const response = await fetch('/api/status'); const status = await response.json();
+  if (status.appVersion !== 'automatic-flow-v2') {
+    $('run-automatic').disabled = true;
+    $('pipeline-status').textContent = 'The server is running an older version. Stop it with Ctrl+C, run npm run dev again, then reload this page.';
+    throw new Error('Restart the old server with npm run dev to load the repaired automatic pipeline.');
+  }
   $('provider-summary').textContent = `RPC ${status.rpcConfigured ? 'configured' : 'not configured'} · Source API ${status.etherscanConfigured ? 'configured' : 'not configured'}`;
-  await inspectLive();
+  const existing = await (await fetch('/api/automation')).json();
+  const monitor = existing.monitors?.[0];
+  if (monitor) {
+    const [chain, address] = monitor.selector.split(':'); $('chain-id').value = chain; $('vault-address').value = address;
+    $('assessment-usd').value = String(monitor.positionUsd); $('destination-addresses').value = monitor.destinations.map(s => s.split(':')[1]).join('\n');
+    $('limit-market').value = String(monitor.policy.maxMarketFraction * 100); $('limit-collateral').value = String(monitor.policy.maxCollateralFraction * 100); $('limit-move').value = String(monitor.policy.maxMoveFraction * 100);
+    $('auto-fork').checked = monitor.autoFork;
+    monitorId = monitor.id; watchedAutomationId = monitor.id; $('stop-monitor').disabled = false;
+    $('activity').textContent = 'Reconnected to the running monitor.'; pollAutomation(monitor.id);
+  } else await inspectLive();
 } catch (error) { $('activity').textContent = `Server unavailable: ${error.message}. Run npm run dev and reload.`; }

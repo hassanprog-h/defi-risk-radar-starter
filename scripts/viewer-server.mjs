@@ -92,11 +92,12 @@ export function createViewerServer() {
       const port = response.socket.localPort;
       if (![`localhost:${port}`, `127.0.0.1:${port}`].includes(request.headers.host)) return json(response, 403, { error: 'Use the local server address' });
       if (request.method === 'POST' && request.headers.origin && ![`http://localhost:${port}`, `http://127.0.0.1:${port}`].includes(request.headers.origin)) return json(response, 403, { error: 'Cross-origin requests are not allowed' });
-      if (request.method === 'GET' && path === '/api/status') return json(response, 200, { rpcConfigured: Boolean(process.env.ETHEREUM_RPC_URL), etherscanConfigured: Boolean(process.env.ETHERSCAN_API_KEY), mode: 'read_only' });
+      if (request.method === 'GET' && path === '/api/status') return json(response, 200, { appVersion: 'automatic-flow-v2', rpcConfigured: Boolean(process.env.ETHEREUM_RPC_URL), etherscanConfigured: Boolean(process.env.ETHERSCAN_API_KEY), mode: 'read_only' });
       if (request.method === 'GET' && path === '/api/backtest') {
         try { return json(response, 200, JSON.parse(await readFile(new URL('../datasets/backtest-report.json', import.meta.url), 'utf8'))); }
         catch { return json(response, 503, { error: 'Historical benchmark unavailable. Run npm run data:history then npm run backtest.' }); }
       }
+      if (request.method === 'GET' && path === '/api/automation') return json(response, 200, { monitors: automation.listMonitors() });
       if (request.method === 'POST' && path === '/api/automation') {
         try { return json(response, 202, automation.start(await readBody(request))); }
         catch { return json(response, 400, { error: 'Use one Ethereum source, positive USD size and up to three destination vaults. One monitor and one automation cycle may run at a time.' }); }
@@ -107,7 +108,7 @@ export function createViewerServer() {
           if (!snapshots.has(snapshot.snapshotId) && snapshots.size >= 30) { const oldest = snapshots.keys().next().value; snapshots.delete(oldest); quotes.delete(oldest); }
           snapshots.set(snapshot.snapshotId, snapshot);
         }
-        return json(response, run ? 200 : 404, run ?? { error: 'Automation run not found' });
+        return json(response, run ? 200 : 404, run ? { ...run, report: run.source ? initialReport(run.source) : null } : { error: 'Automation run not found' });
       }
       if (request.method === 'POST' && path === '/api/automation/stop') {
         try { const { id } = z.object({ id: z.string().uuid() }).parse(await readBody(request)); return json(response, automation.stop(id) ? 200 : 404, { stopped: true }); }
@@ -189,13 +190,13 @@ export function createViewerServer() {
       }
       if (request.method === 'POST' && path === '/api/public-holder') {
         try {
-          const body = z.object({ snapshotId: z.string().max(400) }).parse(await readBody(request));
+          const body = z.object({ snapshotId: z.string().max(400), positionUsd: z.number().finite().positive().max(1e12).optional() }).parse(await readBody(request));
           const live = getSnapshot(body.snapshotId);
           const root = live.nodes.find(n => n.id === live.rootPositionId);
           const options = liveOptions(`${live.chainId}:${root.address}`);
           if (!options.rpc) return json(response, 503, { error: 'An RPC endpoint is required to verify public holder balances.' });
-          return json(response, 200, await findPublicHolder(live, options.rpc, api));
-        } catch { return json(response, 503, { error: 'No public example holder could be verified from the first 20 indexed candidates. You can enter a known holder address manually.' }); }
+          return json(response, 200, await findPublicHolder(live, options.rpc, api, body.positionUsd));
+        } catch { return json(response, 503, { error: 'No public holder with enough verified shares was found in the bounded search, or a fresh sizing price is unavailable. Try a smaller demo position or a known holder of this vault.' }); }
       }
       if (request.method === 'GET' && path === '/api/demo') {
         return json(response, 200, evaluateFixture(snapshot, defaultScenario));

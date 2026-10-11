@@ -79,9 +79,8 @@ try {
   const malformed = { ...saved, edges: [{ ...saved.edges[0], to: 'missing' }] };
   const invalidRecording = await fetch(base + '/api/replay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(malformed) });
   assert.equal(invalidRecording.status, 400);
-  await page.locator('#example').selectOption('1:0x04422053aDDbc9bB2759b248B574e3FCA76Bc145');
   const v2Inspection = inspectionResponse('0x04422053aDDbc9bB2759b248B574e3FCA76Bc145');
-  await page.locator('#inspect').click();
+  await page.locator('#example').selectOption('1:0x04422053aDDbc9bB2759b248B574e3FCA76Bc145');
   live = (await (await v2Inspection).json()).report;
   await page.waitForFunction(() => document.getElementById('mode-badge').textContent === 'LIVE SNAPSHOT' && !document.getElementById('inspect').disabled);
   assert.equal(live.snapshot.protocol, 'Morpho Vault V2');

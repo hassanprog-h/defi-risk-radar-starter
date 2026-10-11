@@ -16,6 +16,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "replay": "npm run build && node scripts/replay.mjs",
     "test:browser": "npm run build && node scripts/browser-smoke.mjs",
+    "test:automatic": "npm run build && node scripts/browser-automatic.mjs",
     "build:contracts": "node scripts/compile-contract.mjs",
     "data:history": "npm run build && node scripts/download-history.mjs",
     "backtest": "npm run build && node scripts/backtest.mjs",
