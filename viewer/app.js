@@ -132,6 +132,14 @@ function renderAutomation(run) {
   for (const candidate of proposed) { const option = element('option', `${candidate.label} · move ${(candidate.moveFraction * 100).toFixed(3)}%`); option.value = candidate.snapshotId; safeSelect.append(option); }
   if (plan.selected) safeSelect.value = plan.selected.snapshotId;
   $('safe-run').disabled = proposed.length === 0;
+  const fieldset = $('delegation-destinations'); fieldset.replaceChildren(element('legend', 'Allowed destinations (proposed by the comparison)'));
+  if (!proposed.length) fieldset.append(element('p', 'No destination meets the policy.', 'field-note'));
+  for (const [index, candidate] of proposed.entries()) {
+    const label = element('label', undefined, 'checkbox'), box = document.createElement('input');
+    box.type = 'checkbox'; box.value = candidate.snapshotId; box.checked = index === 0; box.name = 'delegation-destination';
+    label.append(box, ` ${candidate.label} · proposed move ${(candidate.moveFraction * 100).toFixed(3)}%`); fieldset.append(label);
+  }
+  $('delegation-run').disabled = proposed.length === 0;
   $('run-fork').disabled = select.options.length < 2;
   for (const alert of data.alerts) container.append(element('p', `${alert.type.replaceAll('_', ' ')}: ${alert.explanation}`, 'explanation'));
   for (const fail of data.destinationFailures) container.append(element('p', `${fail.selector}: ${fail.status.replaceAll('_', ' ')}`));
@@ -215,6 +223,55 @@ $("safe-form").addEventListener("submit", async event => {
     }
   } catch (error) { $("safe-result").textContent = `Safe proposal unavailable: ${error.message}`; }
   finally { $("safe-run").disabled = !safeAutomationId; }
+});
+let copiedSafe = '';
+$('safe-address').addEventListener('input', () => {
+  // Prefill the delegation Safe until the user edits it separately.
+  if ($('delegation-safe').value === copiedSafe) { copiedSafe = $('safe-address').value.trim(); $('delegation-safe').value = copiedSafe; }
+});
+$('delegation-form').addEventListener('submit', async event => {
+  event.preventDefault(); if (!safeAutomationId) return;
+  const destinationSnapshotIds = [...document.querySelectorAll('input[name="delegation-destination"]:checked')].map(box => box.value);
+  if (!destinationSnapshotIds.length) { $('delegation-result').textContent = 'Tick at least one allowed destination.'; return; }
+  const percent = $('delegation-percent').value.trim();
+  $('delegation-run').disabled = true; $('delegation-result').textContent = 'Starting a private local fork: installing the Roles module as your Safe, running the bot migration and ten attacks…';
+  try {
+    const response = await fetch('/api/delegation-rehearsal', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ automationId: safeAutomationId, safe: $('delegation-safe').value.trim(), destinationSnapshotIds, ...(percent ? { movePercent: Number(percent) } : {}) }) });
+    const job = await response.json(); if (!response.ok) throw new Error(job.error);
+    for (let i = 0; i < 160; i++) {
+      await new Promise(r => setTimeout(r, 1500));
+      const res = await fetch(`/api/jobs/${job.jobId}`); const status = await res.json();
+      if (!res.ok || status.status === 'failed') throw new Error(status.error);
+      if (status.status !== 'complete') { if (i === 159) throw new Error('The rehearsal is taking longer than four minutes.'); continue; }
+      const report = status.delegation, container = $('delegation-result'); container.replaceChildren();
+      const passed = report.status === 'REHEARSAL_PASSED';
+      container.append(element('h3', passed ? 'Delegation rehearsal passed on the local fork' : `Rehearsal did not pass: ${report.status.replaceAll('_', ' ')}`));
+      if (report.safe) container.append(element('p', `Safe ${report.safe.version} · ${report.safe.threshold} of ${report.safe.owners.length} signatures · fork of block ${report.forkBlock} · Roles module ${report.module}. Mainnet transactions: 0.`));
+      if (report.quotaShares) container.append(element('p', `Bot quota: ${report.quotaShares} raw source shares per ${report.periodSeconds / 3600} h, into ${report.destinations.length} allowed destination(s).`));
+      if (report.failedAt) container.append(element('p', `Stopped at: ${report.failedAt}`, 'explanation'));
+      if (report.attackResults) {
+        container.append(element('h4', 'Attacks (each must be refused by the Roles permission check)'));
+        const table = element('ul');
+        for (const [name, outcome] of Object.entries(report.attackResults)) table.append(element('li', `${name.replace(/([A-Z])/g, ' $1').toLowerCase()}: ${outcome.replace('BLOCKED_BY_ROLE: ', 'refused — ')}`));
+        container.append(table);
+      }
+      if (report.checks) {
+        container.append(element('h4', 'Checks'));
+        const list = element('ul');
+        for (const [name, ok] of Object.entries(report.checks)) list.append(element('li', `${name.replace(/([A-Z])/g, ' $1').toLowerCase()}: ${ok ? 'passed' : 'FAILED'}`));
+        container.append(list);
+      }
+      if (passed && report.setupBatch) {
+        const setup = element('button', 'Download unsigned setup batch (rehearsed on fork only)'); setup.type = 'button';
+        setup.addEventListener('click', () => downloadJson(report.setupBatch, `delegation-setup-${report.forkBlock}.json`)); container.append(setup);
+      }
+      const download = element('button', 'Download rehearsal report'); download.type = 'button';
+      download.addEventListener('click', () => downloadJson(report, `delegation-rehearsal-${report.forkBlock ?? 'failed'}.json`)); container.append(download);
+      for (const caveat of report.caveats ?? []) container.append(element('p', caveat, 'field-note'));
+      break;
+    }
+  } catch (error) { $('delegation-result').textContent = `Delegation rehearsal unavailable: ${error.message}`; }
+  finally { $('delegation-run').disabled = !safeAutomationId; }
 });
 function renderForkCosts(container, result) {
   const forced = result.liquidityRoute?.kind === 'MORPHO_V2_PERMISSIONLESS_FORCE_DEALLOCATE_THEN_REDEEM';
@@ -618,7 +675,7 @@ function showReport(data, { skipAssessment = false, preserveInputs = false } = {
     $('probability').value = fixture ? '25' : '';
     $('exit-cost').value = fixture ? '200' : '';
   }
-  if (previousRoot !== report.snapshot.rootPositionId) { $('owner').value = ''; $('fork-owner').value = ''; $('shares').value = ''; automationRun = null; $('run-fork').disabled = true; safeAutomationId = undefined; $('safe-run').disabled = true; }
+  if (previousRoot !== report.snapshot.rootPositionId) { $('owner').value = ''; $('fork-owner').value = ''; $('shares').value = ''; automationRun = null; $('run-fork').disabled = true; safeAutomationId = undefined; $('safe-run').disabled = true; $('delegation-run').disabled = true; }
   $('exit-result').textContent = fixture ? 'Owner-specific checks are available in live mode.' : 'No owner-specific route has been checked.';
   const metadata = $('metadata');
   metadata.replaceChildren();
@@ -834,7 +891,7 @@ function updateSelectionStatus() {
   $('selection-status').textContent = root ? matches ? `Displayed graph: ${root.label} · ${root.address}` : `Selected address has changed. Displayed graph belongs to ${root.label}; fetching or starting automatic analysis will replace it.` : 'No graph loaded yet.';
 }
 function selectionChanged() {
-  automationRun = null; activeQuoteId = undefined; safeAutomationId = undefined; $('safe-run').disabled = true;
+  automationRun = null; activeQuoteId = undefined; safeAutomationId = undefined; $('safe-run').disabled = true; $('delegation-run').disabled = true;
   $('run-fork').disabled = true; $('owner').value = ''; $('fork-owner').value = ''; $('shares').value = '';
   $('fork-result').replaceChildren(); $('holder-result').replaceChildren();
   updateSelectionStatus();
@@ -842,7 +899,7 @@ function selectionChanged() {
 }
 $('vault-address').addEventListener('input', selectionChanged);
 $('chain-id').addEventListener('input', selectionChanged);
-$('assessment-usd').addEventListener('input', () => { automationRun = null; $('run-fork').disabled = true; safeAutomationId = undefined; $('safe-run').disabled = true; if (monitorId) $('pipeline-status').textContent = 'Amount changed. Start automatic analysis to restart monitoring with this amount.'; });
+$('assessment-usd').addEventListener('input', () => { automationRun = null; $('run-fork').disabled = true; safeAutomationId = undefined; $('safe-run').disabled = true; $('delegation-run').disabled = true; if (monitorId) $('pipeline-status').textContent = 'Amount changed. Start automatic analysis to restart monitoring with this amount.'; });
 try {
   const response = await fetch('/api/status'); const status = await response.json();
   if (status.appVersion !== 'automatic-flow-v2') {

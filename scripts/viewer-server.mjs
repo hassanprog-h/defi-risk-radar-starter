@@ -15,6 +15,7 @@ import { api, liveOptions } from './live-config.mjs';
 import { createAutomationService, assessWithForecast } from './automation-service.mjs';
 import { simulateMigration } from './fork-migration.mjs';
 import { runSafeProposal, publicError } from './propose.mjs';
+import { rehearseDelegation } from './delegation-rehearsal.mjs';
 
 const files = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
@@ -152,6 +153,27 @@ export function createViewerServer() {
           .catch(error => jobs.set(id, { status: 'failed', error: publicError(error) }))
           .finally(() => { forkActive = false; });
         return json(response, 202, { jobId: id, mode: 'UNSIGNED_SAFE_PROPOSAL' });
+      }
+      if (request.method === 'POST' && path === '/api/delegation-rehearsal') {
+        if (forkActive) return json(response, 429, { error: 'A local fork simulation is already running. Wait for it to finish.' });
+        let body, plan, destinations, first;
+        try {
+          body = z.object({ automationId: z.string().uuid(), safe: z.string().regex(/^0x[0-9a-fA-F]{40}$/), destinationSnapshotIds: z.array(z.string().max(400)).min(1).max(3),
+            movePercent: z.number().finite().positive().max(100).optional() }).parse(await readBody(request));
+          plan = automation.get(body.automationId)?.result?.allocation;
+          if (!plan || !(Date.now() - Date.parse(plan.createdAt) < 15 * 60_000)) throw new Error();
+          // Every allowlisted destination must be one the solver proposed; read server-side, never trusted from the browser.
+          const chosen = body.destinationSnapshotIds.map(id => plan.candidates.find(c => c.snapshotId === id));
+          if (chosen.some(c => !c || c.status !== 'POLICY_CANDIDATE')) throw new Error();
+          destinations = chosen.map(c => c.destinationId.split(':')[2]); first = chosen[0];
+        } catch { return json(response, 400, { error: 'Run an automatic comparison first (less than 15 minutes old), then choose up to three of its proposed destinations and enter your Safe address.' }); }
+        forkActive = true;
+        const id = randomUUID(); jobs.set(id, { status: 'running' });
+        rehearseDelegation({ source: plan.sourceId.split(':')[2], safe: body.safe, destinations, moveFraction: body.movePercent === undefined ? first.moveFraction : body.movePercent / 100 })
+          .then(report => jobs.set(id, { status: 'complete', delegation: report }))
+          .catch(error => jobs.set(id, { status: 'failed', error: publicError(error) }))
+          .finally(() => { forkActive = false; });
+        return json(response, 202, { jobId: id, mode: 'LOCAL_FORK_ONLY' });
       }
       if (request.method === 'POST' && path === '/api/assess') {
         try {

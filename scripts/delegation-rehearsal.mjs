@@ -20,7 +20,9 @@ const withdrawAbi = parseAbi(['function erc4626Withdraw(address vault, uint256 a
 const readAbi = parseAbi(['function balanceOf(address) view returns (uint256)', 'function allowance(address,address) view returns (uint256)']);
 
 /** Setup as the Safe, one bounded bot migration, then an attack suite that must all revert. Fork only. */
-export async function rehearseDelegation({ source, destinations, safe, shares, moveFraction, toleranceBps, outsiderDestination }) {
+export async function rehearseDelegation({ source, destinations, safe, shares, moveFraction, toleranceBps, outsiderDestination = source }) {
+  // Default outsider: the source vault itself, which is never on the destination allowlist.
+  if (destinations.some(d => d.toLowerCase() === outsiderDestination.toLowerCase())) throw new Error('INVALID_OUTSIDER');
   if (!process.env.ETHEREUM_RPC_URL) throw new Error('ETHEREUM_RPC_NOT_CONFIGURED');
   const rpc = new ReadOnlyRpc(process.env.ETHEREUM_RPC_URL, 1, 200);
   const proposal = await prepareSafeProposal({ rpc, chainId: 1, source, destination: destinations[0], safe, shares, moveFraction, toleranceBps });
@@ -142,9 +144,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const positional = args.filter((a, i) => !a.startsWith('--') && !args[i - 1]?.startsWith('--'));
   try {
     const [source, safe, ...destinations] = positional;
-    if (!source || !safe || !destinations.length || !flag('--outsider')) throw new Error('Usage: npm run rehearse:delegation -- <source-vault> <safe> <allowed-destination...> --outsider <non-allowlisted-vault> (--fraction 0..1 | --shares RAW)');
+    if (!source || !safe || !destinations.length) throw new Error('Usage: npm run rehearse:delegation -- <source-vault> <safe> <allowed-destination...> (--fraction 0..1 | --shares RAW) [--outsider <non-allowlisted-vault>]');
     const fraction = flag('--fraction');
-    const report = await rehearseDelegation({ source, safe, destinations, shares: flag('--shares'), moveFraction: fraction === undefined ? undefined : Number(fraction), outsiderDestination: flag('--outsider') });
+    const report = await rehearseDelegation({ source, safe, destinations, shares: flag('--shares'), moveFraction: fraction === undefined ? undefined : Number(fraction), ...(flag('--outsider') ? { outsiderDestination: flag('--outsider') } : {}) });
     const out = resolve('.radar/delegation');
     await mkdir(out, { recursive: true });
     const reportPath = resolve(out, `rehearsal-${report.forkBlock ?? 'failed'}.json`);

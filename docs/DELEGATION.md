@@ -23,10 +23,10 @@ Morpho's GeneralAdapter1 is shared by everyone. A bundle that redeems without de
 ## Rehearsal (fork only)
 
 ```bash
-npm run rehearse:delegation -- <source-vault> <safe> <allowed-destination...> --outsider <non-allowlisted-vault> --fraction 0.1
+npm run rehearse:delegation -- <source-vault> <safe> <allowed-destination...> --fraction 0.1 [--outsider <non-allowlisted-vault>]
 ```
 
-Executes the setup as the impersonated Safe, verifies the module (enabled, owner and avatar = Safe), runs ten attacks from clean snapshots, performs the legitimate bot migration, then checks quota exhaustion and revocation. An attack only counts as blocked when the **Roles permission check itself** refuses it (decoded `NotAuthorized`, `NoMembership` or `ConditionViolation(status)`), not when an inner protocol call happens to revert. Reports go to `.radar/delegation/` (git-ignored).
+The outsider vault used by the non-allowlisted-destination attack defaults to the source vault, which is never allowlisted. In the dashboard, open **Rehearse bounded delegation on a local fork** after a reallocation comparison. Executes the setup as the impersonated Safe, verifies the module (enabled, owner and avatar = Safe), runs ten attacks from clean snapshots, performs the legitimate bot migration, then checks quota exhaustion and revocation. An attack only counts as blocked when the **Roles permission check itself** refuses it (decoded `NotAuthorized`, `NoMembership` or `ConditionViolation(status)`), not when an inner protocol call happens to revert. Reports go to `.radar/delegation/` (git-ignored).
 
 ## Measured on 2026-10-11 (block 26167742, Safe `0xADb2…89d5` v1.4.1, 2 of 3)
 
