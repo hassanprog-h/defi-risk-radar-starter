@@ -21,7 +21,8 @@
     "data:history": "npm run build && node scripts/download-history.mjs",
     "backtest": "npm run build && node scripts/backtest.mjs",
     "automation": "npm run build && node scripts/automation.mjs",
-    "test:fork": "npm run build && npm run build:contracts && node scripts/fork-migration.mjs"
+    "test:fork": "npm run build && npm run build:contracts && node scripts/fork-migration.mjs",
+    "propose": "npm run build && node scripts/propose.mjs"
   },
   "devDependencies": {
     "@foundry-rs/anvil": "^1.7.1",

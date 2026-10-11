@@ -75,3 +75,12 @@ test('route, asset, plan, size and reorg problems are refused before any batch e
   ];
   for (const [patch, error] of cases) await assert.rejects(() => prepareSafeProposal({ ...base, ...patch }), error);
 });
+
+// Opt-in: real Safe holder of Steakhouse USDC → Gauntlet USDC Prime, simulated on a private Anvil fork.
+test('live: a real Safe position yields a fork-verified, importable batch', { skip: process.env.LIVE !== '1' && process.env.RUN_LIVE !== '1' }, async () => {
+  const { runSafeProposal } = await import('../scripts/propose.mjs');
+  const result = await runSafeProposal({ source: '0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB', destination: '0xdd0f28e19C1780eb6396170735D45153D261490d', safe: '0xADb2E162935B10A2580bC88C2622e7632B2789d5', moveFraction: 0.01 });
+  assert.equal(result.proposal.simulation.status, 'SIMULATION_PASSED', JSON.stringify(result.proposal.simulation));
+  assert.ok(Object.values(result.proposal.simulation.checks).every(Boolean));
+  assert.equal(result.batch.meta.checksum, batchChecksum(result.batch));
+});
