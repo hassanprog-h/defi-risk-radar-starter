@@ -9,6 +9,7 @@ import { discoverErc4626 } from '../adapters/erc4626.js';
 import { GraphBuilder, evmId, ZERO } from './builder.js';
 import { enrich } from './enrich.js';
 import { discoverDocumentedIssuers } from './issuers.js';
+import { pinV2Accounting } from './accounting.js';
 import type { RpcReader } from './types.js';
 
 export interface InspectOptions { api?: MorphoClient; rpc?: RpcReader; source?: SourceClient; enrichment?: boolean; }
@@ -45,7 +46,8 @@ export async function inspectVault(selector: string, options: InspectOptions = {
   let rpc = options.rpc;
   if (rpc) {
     try {
-      const anchor = await rpc.anchor(builder.snapshot.blockNumber ?? undefined);
+      // V2 financial state is rebuilt from RPC, so use a fresh block rather than a lagging REST index.
+      const anchor = await rpc.anchor(vault && !('state' in vault) ? undefined : builder.snapshot.blockNumber ?? undefined);
       builder.snapshot.blockNumber = anchor.number;
       builder.snapshot.blockTimestamp = anchor.timestamp;
       builder.snapshot.blockHash = anchor.hash;
@@ -64,7 +66,7 @@ export async function inspectVault(selector: string, options: InspectOptions = {
     builder.snapshot.coverage.governance = 'partial';
     builder.snapshot.coverage.oracle = 'partial';
     if ('state' in vault && vault.state) builder.snapshot.coverage.lending = 'verified';
-    if (!('state' in vault)) builder.unknown(builder.snapshot.rootPositionId, 'snapshot_consistency', 'V2 GraphQL allocations have no per-query block anchor; REST index height does not establish atomicity.');
+    if (!('state' in vault) && (!rpc || !await pinV2Accounting(builder, rpc, vault))) builder.unknown(builder.snapshot.rootPositionId, 'snapshot_consistency', 'V2 indexed allocations alone have no common block; complete pinned accounting is required for numeric estimates.');
     if (!rest && !('state' in vault)) builder.unknown(builder.snapshot.rootPositionId, 'governance', 'REST gate configuration is unavailable; V2 gates have not been enumerated.');
     if (rest?.gates) for (const [role, gate] of Object.entries(rest.gates)) {
       if (!gate || gate === ZERO) continue;

@@ -9,3 +9,7 @@ This is a paraphrase of the user's single-page EPFL Hackathon 2026 brief, not a 
 - **Freedom:** any ecosystem (EVM, Solana, Canton, Tempo), graph/statistical/simulation/agent-based methodology; scope may focus on oracles, external-venue vaults or concentration in TVL.
 - **Judging:** dependency discovery 30%, impact 30%, stay/exit usefulness 25%, working real-data demo 15%.
 - **Important:** the brief does **not** require a universal adapter for any possible vault, a live incident feed, AI, or execution of trades. These are optional aspirational features for our product, not claimed competition rules.
+
+## Subsequent user-reported feedback — 2026-10-11
+
+The user reports a conversation with Belem preferring reallocation, possibly automatic after initial authorization, and forecasts derived from live dependencies/data. This changes our intended product direction; it is not independently verified as a formal change to the published brief or scoring. See [the updated implementation plan](AUTOMATION_AND_REALLOCATION.md).

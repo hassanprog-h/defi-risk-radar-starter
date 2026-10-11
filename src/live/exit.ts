@@ -11,8 +11,10 @@ export async function quoteRedemption(snapshot: LiveSnapshot, rpc: ReadOnlyRpc, 
   const root = snapshot.nodes.find(node => node.id === snapshot.rootPositionId);
   if (!root?.address || root.kind !== 'vault') throw new Error('EXIT_REQUIRES_VAULT');
   const result: ExitAssessment = { feasible: null, fullExit: null, costUsd: null, sourceBlock: null, quotedAt: null, owner, reasons: [], evidence: [] };
+  let anchor: { number: string; hash: string } | undefined;
   try {
     const block = await rpc.anchor();
+    anchor = block;
     result.sourceBlock = block.number;
     result.quotedAt = new Date().toISOString();
     const observe = (call: string) => { result.evidence.push({ sourceType: 'onchain_call', reference: `eip155:${snapshot.chainId}:${root.address}#${call}`, blockNumber: block.number, blockTimestamp: block.timestamp, observedAt: result.quotedAt }); };
@@ -39,11 +41,13 @@ export async function quoteRedemption(snapshot: LiveSnapshot, rpc: ReadOnlyRpc, 
     result.previewAssets = preview.toString();
     const fee = reference > preview ? reference - preview : 0n;
     result.feeAssets = fee.toString();
-    if (max === 0n || preview > max) {
+    const v2 = snapshot.protocol === 'Morpho Vault V2';
+    if (!v2 && (max === 0n || preview > max)) {
       result.feasible = false;
       result.reasons.push(max === 0n ? 'The current maxWithdraw limit is zero.' : 'The requested full redemption exceeds current maxWithdraw; a smaller withdrawal may be available.');
       return result;
     }
+    if (v2) result.reasons.push('Morpho V2 deliberately reports zero from ERC-4626 max functions. Direct redemption feasibility is checked with the actual redeem call simulation, not inferred from maxWithdraw.');
     if (preview <= 0n) { result.reasons.push('Preview returns no assets; redeemability remains unresolved.'); return result; }
     const ownerCode = await rpc.code(owner, block.number);
     if (ownerCode && ownerCode !== '0x') {
@@ -57,20 +61,23 @@ export async function quoteRedemption(snapshot: LiveSnapshot, rpc: ReadOnlyRpc, 
     observe('eth_estimateGas redeem(shares,owner,owner)');
     const asset = addressSchema.parse(assetRaw);
     const decimals = Number(await rpc.read(asset, 'function decimals() view returns (uint8)', [], block.number));
-    const existingPrice = snapshot.observations.find(observation => observation.entityId === `eip155:${snapshot.chainId}:${asset}` && observation.metric === 'priceUsd');
-    const priceAge = existingPrice?.evidence.blockTimestamp ? Date.now() - Date.parse(existingPrice.evidence.blockTimestamp) : NaN;
-    const price = existingPrice && typeof existingPrice.value === 'number' && existingPrice.value > 0 && Number.isFinite(priceAge) && priceAge >= 0 && priceAge < 15 * 60_000 ? existingPrice.value : null;
+    const freshPrice = async (address: string) => {
+      const raw = await api.http.request(api.base + '/graphql', { query: 'query ExitPrice($address:String!,$chainId:Int!) { assetByAddress(address:$address,chainId:$chainId) { price { usd timestamp } } }', variables: { address, chainId: snapshot.chainId } });
+      const value = z.object({ data: z.object({ assetByAddress: z.object({ price: z.object({ usd: z.number().finite().positive(), timestamp: rawInteger }).nullable() }).nullable() }) }).parse(raw).data.assetByAddress?.price;
+      const age = value ? Date.now() / 1000 - Number(value.timestamp) : NaN;
+      if (!value || !Number.isFinite(age) || age < 0 || age >= 15 * 60) return null;
+      result.evidence.push({ sourceType: 'protocol_api', reference: api.base + '/graphql', sourcePath: `assetByAddress(${address}).price`, observedAt: result.quotedAt, timestamp: value.timestamp });
+      return value.usd;
+    };
+    // Reference prices are refreshed for the quote, independently of indexed discovery timestamps.
+    const [price, ethPrice] = await Promise.all([
+      freshPrice(asset).catch(() => null),
+      snapshot.chainId === 1 ? freshPrice('0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2').catch(() => null) : Promise.resolve(null)
+    ]);
     if (price !== null && Number.isInteger(decimals) && decimals >= 0 && decimals <= 36) {
       result.assetPriceUsd = price;
       result.positionValueUsd = Number(formatUnits(reference, decimals)) * price;
-      if (snapshot.chainId === 1) {
-        const eth = await api.http.request(api.base + '/graphql', { query: 'query { assetByAddress(address:"0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", chainId:1) { price { usd timestamp } } }' });
-        const value = z.object({ data: z.object({ assetByAddress: z.object({ price: z.object({ usd: z.number().finite().positive(), timestamp: rawInteger }).nullable() }).nullable() }) }).parse(eth).data.assetByAddress?.price;
-        if (value && Date.now() / 1000 - Number(value.timestamp) >= 0 && Date.now() / 1000 - Number(value.timestamp) < 15 * 60) {
-          result.costUsd = Number(formatUnits(fee, decimals)) * price + Number(result.gasCostEth) * value.usd;
-          result.evidence.push({ sourceType: 'protocol_api', reference: api.base + '/graphql', sourcePath: 'assetByAddress(WETH).price', observedAt: result.quotedAt, timestamp: value.timestamp });
-        }
-      }
+      if (ethPrice !== null) result.costUsd = Number(formatUnits(fee, decimals)) * price + Number(result.gasCostEth) * ethPrice;
     }
     if ((result.costUsd !== null && !Number.isFinite(result.costUsd)) || (result.positionValueUsd !== undefined && !Number.isFinite(result.positionValueUsd))) {
       result.costUsd = null; delete result.positionValueUsd;
@@ -79,12 +86,24 @@ export async function quoteRedemption(snapshot: LiveSnapshot, rpc: ReadOnlyRpc, 
     if (result.costUsd === null) result.reasons.push('Fresh underlying/native USD reference prices are unavailable; no dollar exit-cost comparison is produced.');
     result.reasons.push('This is a read-only estimate for direct redemption to the underlying asset, not a guaranteed fill or a swap into dollars. Gas price, state and withdrawal availability may change.');
     result.reasons.push('Gas uses the current network gas price; costs on other chains and nonstandard token transfer fees require separate models.');
-    if (!await rpc.sameBlock(block.number, block.hash)) { result.feasible = null; result.costUsd = null; result.reasons.push('Anchor changed during quote; reorg invalidates the assessment.'); }
     return result;
   } catch {
     result.feasible = null;
     result.costUsd = null;
     result.reasons.push('Preview, gas estimation, or provider read failed; execution feasibility is unknown.');
     return result;
+  } finally {
+    // Early outcomes (including zero balance and withdrawal limits) also need a reorg check.
+    if (anchor) {
+      try {
+        if (!await rpc.sameBlock(anchor.number, anchor.hash)) {
+          result.feasible = null; result.costUsd = null; delete result.positionValueUsd;
+          result.reasons.push('Anchor changed during quote; reorg invalidates the assessment.');
+        }
+      } catch {
+        result.feasible = null; result.costUsd = null; delete result.positionValueUsd;
+        result.reasons.push('Quote block could not be rechecked; execution feasibility remains unknown.');
+      }
+    }
   }
 }

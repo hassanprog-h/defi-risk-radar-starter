@@ -5,6 +5,7 @@ const targetKinds = { MARKET_LOSS: 'lending_market', ORACLE_STALE: 'oracle', CHA
 let report;
 let selected;
 let activeQuoteId;
+let assessmentSequence = 0;
 let zoom = .85;
 let scene = { width: 1200, height: 660 };
 
@@ -63,9 +64,9 @@ function updateZoom() {
 function drawGraph() {
   const { snapshot, incident } = report;
   const positions = layout(snapshot);
-  const affected = new Set(incident.affectedNodeIds);
+  const affected = new Set($('advanced-scenario').open ? incident.affectedNodeIds : []);
   const affectedEdges = new Set();
-  for (const path of incident.pathsToPosition) {
+  for (const path of $('advanced-scenario').open ? incident.pathsToPosition : []) {
     for (let i = 1; i < path.length; i++) {
       for (const edge of snapshot.edges) {
         if (edge.from === path[i] && edge.to === path[i - 1]) affectedEdges.add(edge.id);
@@ -173,7 +174,7 @@ function renderEvidence() {
   appendObservations(container, node.id);
   if (targetKinds[$('kind').value] === node.kind) {
     const button = element('button', 'Use this node as the scenario target', 'secondary');
-    button.addEventListener('click', () => { $('target').value = node.id; $('scenario-form').requestSubmit(); });
+    button.addEventListener('click', () => { $('advanced-scenario').open = true; $('target').value = node.id; $('scenario-form').requestSubmit(); });
     container.append(element('br'), button);
   }
 }
@@ -181,13 +182,13 @@ function renderResult() {
   const { incident, decision } = report;
   const container = $('result');
   const fixture = report.snapshot.mode === 'fixture';
-  container.replaceChildren(element('p', fixture ? 'SIMPLIFIED FIXTURE COMPARISON' : 'MODELLED IMPACT · CONDITIONAL DECISION', 'eyebrow'), element('div', decision.action.replaceAll('_', ' '), `decision ${decision.action}`));
+  container.replaceChildren(element('p', fixture ? 'SIMPLIFIED FIXTURE COMPARISON' : 'MODELLED IMPACT · CHECKED EXIT DECISION', 'eyebrow'), element('div', decision.action.replaceAll('_', ' '), `decision ${decision.action}`));
   const metrics = {
     [fixture ? 'Position value (fixture)' : report.exit?.fullExit && report.exit.positionValueUsd === report.positionUsd ? 'Position value (checked balance/reference)' : 'Assumed position value']: money(fixture ? report.snapshot.rootPositionUsd : report.positionUsd),
     'Conditional additional loss': money(incident.incrementalLossIfStayingUsd),
     'Expected loss (assumed probability)': money(decision.estimatedExpectedLossUsd),
-    'Exit cost': money(decision.exitCostUsd),
-    'Break-even probability': decision.breakEvenProbability == null ? 'Unknown' : `${(decision.breakEvenProbability * 100).toFixed(2)}%`,
+    [fixture ? 'Exit cost (fixture)' : 'Checked exit cost']: money(decision.exitCostUsd),
+    [fixture ? 'Break-even probability' : 'Checked break-even probability']: decision.breakEvenProbability == null ? 'Unknown' : `${(decision.breakEvenProbability * 100).toFixed(2)}%`,
     'Affected paths to position': String(incident.pathsToPosition.length)
   };
   for (const [label, value] of Object.entries(metrics)) {
@@ -196,7 +197,26 @@ function renderResult() {
     container.append(row);
   }
   if (report.exposureUsd != null) container.append(element('p', `Affected exposure: ${money(report.exposureUsd)}. This is not a loss estimate.`, 'explanation'));
-  if (report.sensitivity) container.append(element('p', `Assumed-cost sensitivity: break-even probability ${(report.sensitivity.breakEvenProbability * 100).toFixed(2)}%. No verified exit decision follows from this assumption.`, 'explanation'));
+  if (report.exposureUsd != null && report.positionUsd > 0 && report.scenario.kind === 'MARKET_LOSS' && incident.incrementalLossIfStayingUsd != null) {
+    container.append(element('p', `${money(report.positionUsd)} position × ${(report.exposureUsd / report.positionUsd * 100).toFixed(4)}% deployed allocation × ${(report.scenario.severityFraction * 100).toFixed(1)}% assumed lender loss = ${money(incident.incrementalLossIfStayingUsd)} conditional additional loss.`, 'explanation'));
+  }
+  if (report.sensitivity) {
+    const sensitivity = element('div', undefined, 'sensitivity-card');
+    sensitivity.append(element('p', 'ASSUMPTIONS-ONLY COMPARISON', 'eyebrow'));
+    const labels = { EXIT_COST_LOWER: 'Exiting has lower modelled cost', STAY_COST_LOWER: 'Staying has lower modelled cost', EQUAL_COST: 'Modelled costs are equal' };
+    sensitivity.append(element('strong', labels[report.sensitivity.comparison] ?? 'Enter a probability to compare costs'));
+    sensitivity.append(element('p', `Expected additional loss: ${money(report.sensitivity.expectedLossUsd)} · Assumed exit cost: ${money(report.sensitivity.assumedExitCostUsd)}`));
+    sensitivity.append(element('p', `Break-even probability: ${(report.sensitivity.breakEvenProbability * 100).toFixed(2)}%.${report.sensitivity.breakEvenProbability > 1 ? ' Above 100%: the assumed exit cost exceeds the conditional loss even if the event occurs.' : ''}`));
+    sensitivity.append(element('p', 'This comparison assumes an exit is possible and avoids the modelled loss. It is separate from the checked redemption decision above.'));
+    container.append(sensitivity);
+  }
+  if (decision.action === 'INSUFFICIENT_EVIDENCE' && report.decisionRequirements?.length) {
+    const requirements = element('div', undefined, 'requirements-card');
+    requirements.append(element('strong', 'What is needed for a checked decision'));
+    const list = element('ul');
+    for (const requirement of report.decisionRequirements) list.append(element('li', requirement));
+    requirements.append(list); container.append(requirements);
+  }
   container.append(element('p', decision.explanation, 'explanation'));
   for (const blocker of report.blockers ?? []) container.append(element('p', `Estimate withheld · ${blocker.category}: ${blocker.reason}`, 'explanation'));
   const details = element('details');
@@ -293,10 +313,18 @@ function showReport(data) {
   activeQuoteId = undefined;
   const fixture = report.snapshot.mode === 'fixture';
   const replay = report.snapshot.mode === 'historical_replay';
+  $('automatic-panel').hidden = fixture;
+  $('assess').disabled = fixture;
+  $('assessment-usd').value = '';
+  $('assessment-result').replaceChildren();
+  if (fixture) { ++assessmentSequence; $('advanced-scenario').open = true; }
+  else assessSnapshot(null);
   $('mode-badge').textContent = fixture ? 'FIXTURE DEMO' : replay ? 'HISTORICAL RECORDING' : 'LIVE SNAPSHOT';
   $('evidence-badge').textContent = fixture ? 'FIXTURE EVIDENCE ONLY' : 'SOURCE EVIDENCE';
-  $('mode-notice').textContent = fixture ? 'ILLUSTRATIVE DATA: fabricated relationships and balances for testing; no live data in this fixture.' : replay ? 'HISTORICAL RECORDING: saved provider observations, with original timestamps. Schema validation does not authenticate imported evidence. Scenarios are hypothetical; current exit decisions are disabled.' : 'LIVE DEPENDENCIES: timestamped provider observations. Failures, severity, USD size and probability are hypothetical assumptions. Coverage gaps are listed below.';
+  $('mode-notice').textContent = fixture ? 'ILLUSTRATIVE DATA: fabricated relationships and balances for testing; no live data in this fixture.' : replay ? 'HISTORICAL RECORDING: saved provider observations, with original timestamps. Schema validation does not authenticate imported evidence. Scenarios are hypothetical; current exit decisions are disabled.' : 'LIVE SNAPSHOT: timestamped dependency measurements and capital allocations. Forecasts and reallocation are pending. Advanced stress scenarios use assumed severity and probability; coverage gaps are listed below.';
   $('quote').disabled = fixture || replay;
+  $('find-holder').disabled = fixture || replay;
+  $('holder-result').textContent = '';
   $('position-usd').disabled = fixture;
   $('position-usd').value = fixture ? report.snapshot.rootPositionUsd : '';
   $('probability').value = fixture ? '25' : '';
@@ -314,9 +342,57 @@ function showReport(data) {
   select({ nodeId: report.snapshot.rootPositionId });
   renderResult();
   renderCoverage();
-  $('simulate').disabled = false;
+  $('simulate').disabled = $('target').options.length === 0;
   $('export').disabled = false;
 }
+
+async function assessSnapshot(positionUsd) {
+  const sequence = ++assessmentSequence;
+  const snapshotId = report.snapshot.snapshotId;
+  $('assess').disabled = true;
+  $('assessment-result').textContent = 'Checking discovered dependencies and verified capital measurements…';
+  try {
+    const response = await fetch('/api/assess', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ snapshotId, positionUsd }) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    if (sequence !== assessmentSequence || report.snapshot.snapshotId !== snapshotId) return;
+    const container = $('assessment-result'); container.replaceChildren();
+    container.append(element('p', `${data.dependencyCount} discovered components · ${data.failedRoundChecks} failed basic oracle round checks · ${data.unknownOracleChecks} oracle checks unknown`, 'explanation'));
+    if (data.concentrations.length) {
+      container.append(element('strong', 'Largest measured market allocations (capital exposure, not estimated loss)'));
+      const list = element('ul');
+      for (const market of data.concentrations.slice(0, 5)) {
+        const item = element('li');
+        const button = element('button', `${market.label}: ${(market.fraction * 100).toFixed(3)}%${market.exposureUsd === null ? '' : ` · ${money(market.exposureUsd)}`}`, 'secondary');
+        button.addEventListener('click', () => { $('node-search').value = market.entityId; $('node-search').dispatchEvent(new Event('change')); });
+        item.append(button); list.append(item);
+      }
+      container.append(list);
+    }
+    for (const check of data.oracleChecks.filter(o => o.status === 'ROUND_CHECK_FAILED')) container.append(element('p', `${check.label}: ${check.explanation}`, 'explanation'));
+    container.append(element('p', 'Forecast and reallocation: insufficient evidence. A calibrated forecasting model and checked destinations/routes are not installed.', 'explanation'));
+    const details = element('details'); details.append(element('summary', 'Evidence, checks and missing models'));
+    const list = element('ul');
+    for (const check of data.oracleChecks) {
+      const item = element('li', `${check.label}: ${check.status.replaceAll('_', ' ')}${check.ageSecondsAtSnapshot === null ? '' : ` · age at snapshot ${check.ageSecondsAtSnapshot}s`}`);
+      if (check.evidence) item.append(element('small', ` · ${check.evidence.reference} · block ${check.evidence.blockNumber}`));
+      list.append(item);
+    }
+    for (const unknown of data.unknowns) list.append(element('li', unknown));
+    details.append(list, element('p', data.explanation)); container.append(details);
+  } catch (error) {
+    if (sequence === assessmentSequence && report.snapshot.snapshotId === snapshotId) $('assessment-result').textContent = `Automatic checks unavailable: ${error.message}`;
+  } finally {
+    if (sequence === assessmentSequence && report.snapshot.snapshotId === snapshotId) $('assess').disabled = false;
+  }
+}
+$('assessment-form').addEventListener('submit', event => {
+  event.preventDefault();
+  if (!report || report.snapshot.mode === 'fixture') return;
+  const size = Number($('assessment-usd').value);
+  $('position-usd').value = String(size);
+  assessSnapshot(size);
+});
 
 function appendObservations(container, id) {
   const observations = report.snapshot.observations?.filter(item => item.entityId === id) ?? [];
@@ -339,6 +415,11 @@ function renderCoverage() {
   details.append(list); container.append(details);
 }
 $('affected-only').addEventListener('change', drawGraph);
+$('advanced-scenario').addEventListener('toggle', () => {
+  if (!report) return;
+  if (!$('advanced-scenario').open) $('affected-only').checked = false;
+  drawGraph();
+});
 $('node-search').addEventListener('change', () => {
   select({ nodeId: $('node-search').value });
   const location = layout(report.snapshot).get($('node-search').value);
@@ -421,7 +502,25 @@ $('exit-form').addEventListener('submit', async event => {
   } catch (error) { $('exit-result').textContent = `Redemption assessment failed: ${error.message}`; }
   finally { $('quote').disabled = report.snapshot.mode !== 'live'; }
 });
+$('find-holder').addEventListener('click', async () => {
+  if (!report || report.snapshot.mode !== 'live') return;
+  const snapshotId = report.snapshot.snapshotId;
+  $('find-holder').disabled = true;
+  $('holder-result').textContent = 'Finding an indexed public holder and checking its current balance…';
+  try {
+    const response = await fetch('/api/public-holder', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ snapshotId }) });
+    const holder = await response.json(); if (!response.ok) throw new Error(holder.error);
+    if (report.snapshot.snapshotId !== snapshotId) return;
+    if (activeQuoteId) $('result').replaceChildren(element('p', 'Public holder changed. Check redemption again or apply the scenario without a quote.', 'explanation'));
+    activeQuoteId = undefined; $('owner').value = holder.owner; $('shares').value = '';
+    $('holder-result').textContent = `Public example selected; this is not your wallet. Balance verified at block ${holder.sourceBlock}.`;
+    $('exit-result').textContent = 'Click Check withdrawal and estimate gas to assess this holder’s full position.';
+  } catch (error) { if (report.snapshot.snapshotId === snapshotId) $('holder-result').textContent = error.message; }
+  finally { $('find-holder').disabled = report.snapshot.mode !== 'live'; }
+});
 for (const id of ['owner', 'shares']) $(id).addEventListener('input', () => {
+  if (id === 'owner') $('holder-result').textContent = '';
+  if (activeQuoteId) $('result').replaceChildren(element('p', 'Position changed. The previous checked decision has been cleared. Check redemption again or apply the scenario without a quote.', 'explanation'));
   activeQuoteId = undefined;
   $('exit-result').textContent = 'Position changed. Check redemption again to use a quote for this owner and amount.';
 });

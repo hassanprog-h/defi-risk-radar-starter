@@ -78,4 +78,32 @@ export class MorphoClient {
     if (response.data.some(row => row.chain_id !== chainId)) throw new ProviderError('IDENTITY_MISMATCH');
     return { ...response, source: this.base + path, observedAt: new Date().toISOString() };
   }
+  // Fields/arguments checked against the public introspection schema on 2026-10-11.
+  async holders(chainId: number, address: string, version: 1 | 2) {
+    const query = version === 2 ? `query PublicHolders($address:String!,$chainId:Int!) {
+      vaultV2ByAddress(address:$address,chainId:$chainId) { address chain { id }
+        positions(first:20,where:{shares_gte:"1"}) { items { user { address } shares } }
+      }
+    }` : `query PublicHolders($address:String!,$chainId:Int!) {
+      vaultPositions(first:20,orderBy:Shares,orderDirection:Asc,where:{vaultAddress_in:[$address],chainId_in:[$chainId],shares_gte:"1"}) {
+        items { user { address } state { shares } vault { address chain { id } } }
+      }
+    }`;
+    const raw = await this.http.request(this.base + '/graphql', { query, variables: { address, chainId } });
+    const envelope = z.object({ data: z.record(z.string(), z.unknown()).nullish(), errors: z.array(z.unknown()).optional() }).parse(raw);
+    if (envelope.errors?.length || !envelope.data) throw new ProviderError('HOLDER_QUERY_UNAVAILABLE');
+    const identity = z.object({ address: addressSchema, chain: z.object({ id: z.number().int().positive() }) });
+    const user = z.object({ address: addressSchema });
+    let items: { owner: string; shares: string }[];
+    if (version === 2) {
+      const result = identity.extend({ positions: z.object({ items: z.array(z.object({ user, shares: rawInteger })).max(20) }) }).parse(envelope.data.vaultV2ByAddress);
+      if (result.address !== address.toLowerCase() || result.chain.id !== chainId) throw new ProviderError('IDENTITY_MISMATCH');
+      items = result.positions.items.map(p => ({ owner: p.user.address, shares: p.shares }));
+    } else {
+      const result = z.object({ items: z.array(z.object({ user, state: z.object({ shares: rawInteger }).nullable(), vault: identity })).max(20) }).parse(envelope.data.vaultPositions);
+      if (result.items.some(p => p.vault.address !== address.toLowerCase() || p.vault.chain.id !== chainId)) throw new ProviderError('IDENTITY_MISMATCH');
+      items = result.items.filter(p => p.state).map(p => ({ owner: p.user.address, shares: p.state!.shares }));
+    }
+    return items.filter(p => BigInt(p.shares) > 0n);
+  }
 }

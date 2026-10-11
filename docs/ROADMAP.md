@@ -10,14 +10,24 @@ The user subsequently authorized building the broader application. M1 is impleme
 | --- | --- |
 | M0 | Fixture core and visual explorer functional |
 | M1 | Live V1 adapter, RPC corroboration, actual JSON CLI, network/provenance metadata, captured-response tests and two real vault checks implemented |
-| M2 | V2 adapter/nested traversal, paginated vault directory, GraphQL unlisted fallback, generic ERC-4626 accounting and bounded source/proxy enrichment implemented; V2 inner-page pagination and atomic accounting remain incomplete |
+| M2 | V2 adapter/nested traversal, paginated vault directory, GraphQL unlisted fallback, generic ERC-4626 accounting and bounded source/proxy enrichment implemented; one-block accounting for fully discovered direct-market adapters implemented; nested accounting and wider inner-page discovery remain incomplete |
 | M3 | Live address selector, graph interaction, evidence, coverage, scenarios and export implemented with native SVG/JavaScript and a local Node API; no React Flow dependency required for this slice |
-| M4 | Snapshot measurements, feed round data, conditional market-loss and explicit vault-capital stress implemented; borrower bad-debt/liquidation models remain pending |
-| M5 | Public-owner direct redemption preview, limits, read-only gas estimate, quote freshness and qualified decisions implemented; swap execution quotes, queues and advanced route models remain pending |
+| M4 | Snapshot measurements, feed round data, conditional V1/reconciled V2 market-loss and explicit vault-capital stress implemented; assumptions-only comparison and actionable missing-data requirements implemented; borrower bad-debt/liquidation models remain pending |
+| M5 | Public-owner direct redemption preview, verified example-holder finder, correct V2 zero-max semantics, refreshed pricing, read-only gas estimate, quote freshness and qualified decisions implemented; swap execution quotes, queues and advanced route models remain pending |
 | M6 | Pendle PT/SY links and associated venues corroborated inside real Morpho graphs; documented USDC issuer identity and selected wrappers/proxies implemented; complete protocol position adapters and backing discovery remain pending |
 | M7–M8 | Research and platform goals remain pending |
 
 Saved real-provider graphs can be imported for explicitly labelled hypothetical historical stress testing. This is not a calibrated real-incident replay benchmark. See [implementation details](IMPLEMENTATION.md) and the README for measured graphs, commands and limitations.
+
+## Updated priority — automatic assessment and reallocation
+
+The user's 2026-10-11 conversation with Belem expands the target to automatic forecasts, destination comparison and potentially bounded delegated execution. This sequence supersedes the original suggested sequence without declaring unfinished models complete. See [AUTOMATION_AND_REALLOCATION.md](AUTOMATION_AND_REALLOCATION.md) for acceptance criteria.
+
+- **Implemented first slice:** automatic snapshot dependency measurements via `POST /api/assess`, an amount-only dashboard form and advanced manual stress tests. No calibrated probabilities or automatic fund movement are claimed.
+- **Next:** reproducible time-series/borrower dataset and one validated forecasting model, with event/horizon, calibration, provenance and uncertainty.
+- **Then:** real destination analysis, retained/shared dependencies and full migration costs, including deposit feasibility and partial moves.
+- **Then:** local-fork migration simulation and permission-boundary tests, followed by one supported smart-account delegation and monitoring integration.
+- **Activation:** mainnet remains read-only until concrete execution, policy and simulation are reviewed and real execution explicitly enabled.
 
 ## Milestone 0 — Executable domain seed (included)
 

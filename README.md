@@ -2,7 +2,9 @@
 
 A working, read-only hackathon prototype for the Belem Capital DeFi Risk Dependency Challenge. Select a real vault, inspect its dependency graph and evidence, inject a hypothetical failure, and assess conditional impact and a public owner's redemption route.
 
-**Implemented:** live Morpho V1 and V2 discovery, V2 adapter traversal, generic ERC-4626 accounting detection, contract/source enrichment, upstream oracle reads, Pendle PT/SY and venue association, documented USDC issuer identity, graph dashboard, conditional market/vault-capital stress models, read-only redemption assessment, JSON export and historical recording stress tests. The original illustrative fixture remains separate.
+The expanded target is **automatic risk assessment and reallocation**, with bounded delegated execution after one-time setup. Automatic dependency measurements are implemented; calibrated forecasts, destination comparison and execution are pending. See the [delivery sequence](docs/AUTOMATION_AND_REALLOCATION.md). Current code never moves funds.
+
+**Implemented:** live Morpho V1 and V2 discovery, V2 adapter traversal and pinned direct-market accounting, generic ERC-4626 accounting detection, contract/source enrichment, upstream oracle reads, Pendle PT/SY and venue association, documented USDC issuer identity, graph dashboard, conditional market/vault-capital stress models, read-only redemption assessment, verified public demo-holder lookup, JSON export and historical recording stress tests. The original illustrative fixture remains separate.
 
 **Coverage is reported explicitly.** Entering any address starts a discovery attempt; unsupported strategies and incomplete layers stay unknown. This is not a complete universal risk engine. No wallet signing, transactions or trading occur.
 
@@ -19,7 +21,13 @@ The dashboard initially inspects Steakhouse USDC using live providers. Choose a 
 
 Click nodes or relationships for evidence, find a node with the dropdown, zoom or scroll through the graph, and toggle affected paths. Scenario probability, severity and hypothetical USD position size are labelled assumptions. A guessed exit cost provides a sensitivity threshold, never a verified live exit decision.
 
+**Assess the discovered dependencies** takes only a position value. It automatically checks loaded verified market concentrations and basic oracle round observations with freshness/accounting gates. It asks for no manual probabilities. Missing forecasts and migration analysis remain visible; exposure is not loss and a passed round check is not a safety rating. **Inspect live vault** refreshes provider data; **Assess snapshot** reevaluates loaded observations. Manual probability/severity inputs are under **Advanced: hypothetical stress tests**.
+
+For supported direct-market V2 vaults, the server reads the complete active adapter/market lists and balances at one fresh Ethereum block and reconciles idle funds plus adapter holdings to `totalAssets()`. This unlocks conditional loss estimates when all checks succeed; failures remain explicit. The result shows an **assumptions-only comparison** separately from the checked redemption decision, plus the exact inputs still missing. For example, Keyrock's USDC/wstETH market held about 0.6831% of capital during validation: a hypothetical $10,000 position and 20% lender haircut implied $13.66 conditional loss, not $2,000 across the entire vault.
+
 For an owner-specific assessment, enter a **public owner address**. Shares are optional raw units; blank requests the owner's full balance. The server reads balances, `maxWithdraw`, conversion and redemption previews, and estimates gas. It never sends a transaction. Quotes expire after 60 seconds and must match the checked owner/amount. Direct redemption returns the underlying token; it is not a dollar cash-out quote.
+
+**Find a public demo holder** selects an indexed candidate whose nonzero balance and non-contract account are verified with fresh RPC reads. It is explicitly someone else's public position; search is bounded to 20 candidates. Then click **Check withdrawal and estimate gas**. Morpho V2's max functions deliberately return zero, so V2 feasibility uses the actual read-only redemption simulation rather than treating `maxWithdraw == 0` as a withdrawal ban. USD reference prices are refreshed for each quote. A checked full-balance valuation replaces the hypothetical size; the result label distinguishes them.
 
 ## Provider configuration
 
@@ -89,7 +97,7 @@ The V2 example includes settlement, yield-source/principal, oracle, AMM venue an
 
 Material limitations:
 
-- V2 GraphQL allocations lack a common query block anchor; numerical attribution remains disabled when snapshot consistency is unresolved. Nested-vault loss allocation requires verified share ownership/conversions.
+- V2 indexed allocations lack a common query block anchor. Supported direct Morpho market adapters now replace financial inputs with one-block contract reads, including complete active-market enumeration, and reconcile them before enabling numbers. Nested/unknown adapters, undiscovered active markets, inconsistent totals/rate-cap effects, read failures and unresolved accounting still suppress estimates.
 - V2 adapter and market-position pages currently fetch 20 entries each; truncation is explicit. Listed-vault and Pendle venue catalogues paginate. Unlisted Morpho addresses also try GraphQL.
 - Enrichment is bounded: four RPC requests in flight, 600 RPC operations per inspection, 60 enriched entities, 40 source lookups, nested vault depth four. Missing ABIs, provider failures, cycles and budgets produce unknowns.
 - Indexer lag was observed during validation. Anchor blocks older than 15 minutes and inspections older than five minutes suppress current numerical estimates. Saved recordings remain available for historical stress testing.
@@ -98,6 +106,8 @@ Material limitations:
 - Source scanning covers selected getters and ERC-1967 patterns, not arbitrary storage, every proxy design, traces or static program analysis. No AI-generated relationships or probabilities are presented as verified.
 - Multi-position portfolio accounting, continuous incident monitoring, complete Aave/Pendle position adapters, bridges and non-EVM chains remain roadmap work. In-memory jobs/snapshots are lost when the local server stops.
 
+Additional read-only validation on 2026-10-11 reconciled Keyrock's one adapter and nine active markets at block 26166593. The screenshot scenario ($10,000, 20% haircut, 25% probability, $500 assumed exit cost) produced about $13.66 conditional loss and $3.42 expected loss. A public holder's full redemption simulation succeeded despite V2's zero max function, returning underlying USDC with about $0.09 estimated gas cost at that state. These observations and scenario assumptions are not an incident forecast, actual executed trade or guaranteed future quote.
+
 ## Checks
 
 ```bash
@@ -105,7 +115,7 @@ npm test
 npm run typecheck
 ```
 
-Tests cover real captured API normalization, V2 paths, unlisted fallback, invalid addresses, nullable oracles, changing/duplicate capital exposures, cycles, missing evidence, provider failures, venue mismatches, quote freshness, restricted withdrawals, reorgs and replay validation. They run offline; one network smoke test is opt-in with `RUN_LIVE=1`.
+Tests cover real captured API normalization, V2 paths, unlisted fallback, invalid addresses, nullable oracles, changing/duplicate capital exposures, cycles, missing evidence, provider failures, venue mismatches, quote freshness, restricted withdrawals, reorgs and replay validation. Automatic assessment tests also reject fabricated probabilities/loss, unverified rounds, stale/unanchored records and duplicate capital. They run offline; one network smoke test is opt-in with `RUN_LIVE=1`.
 
 Browser verification needs Playwright Chromium and live network access:
 
@@ -114,7 +124,9 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-It checks rendered live nodes/edges, failure scenarios, recording import, fixture switching, evidence keyboard interaction, mobile overflow and credential isolation. Browser QA servers close automatically.
+An existing Chromium installation can be used with `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/absolute/path/to/chromium npm run test:browser`.
+
+It checks rendered live nodes/edges, amount-only observational assessment, advanced failure scenarios, recording import, fixture switching, evidence keyboard interaction, mobile overflow and credential isolation. Browser QA servers close automatically.
 
 ## Design and sources
 

@@ -21,6 +21,11 @@
       <p id="activity" aria-live="polite"></p>
     </section>
     <div class="metadata" id="metadata">Waiting for discovery…</div>
+    <section class="panel coverage-panel" id="automatic-panel" aria-label="Automatic dependency checks">
+      <div class="panel-heading"><div><p class="eyebrow">AUTOMATIC · OBSERVED DATA</p><h2>Assess the discovered dependencies</h2><p>Enter a position value. Checks use the loaded snapshot; Inspect live vault refreshes provider data.</p></div></div>
+      <form id="assessment-form" class="discovery-form"><label>Position value ($)<input id="assessment-usd" type="number" min="0.01" max="1000000000000" step="any" placeholder="e.g. 10000" required></label><button id="assess" class="primary" type="submit" disabled>Assess snapshot</button></form>
+      <div id="assessment-result" aria-live="polite">Load a live vault to run automatic checks.</div>
+    </section>
     <div class="workspace">
       <section class="panel graph-panel" aria-label="Dependency graph">
         <div class="panel-heading"><div><h2>Dependency graph</h2><p>Arrows point from dependent → dependency.</p></div><div class="zoom-controls"><button id="zoom-out" aria-label="Zoom out">−</button><button id="fit">Fit</button><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
@@ -30,6 +35,7 @@
         <div class="graph-hint">Select a node or relationship for evidence. Scroll or drag the background to explore; use + / − to zoom.</div>
       </section>
       <aside class="panel scenario-panel">
+        <details id="advanced-scenario"><summary>Advanced: hypothetical stress tests</summary>
         <p class="eyebrow">HYPOTHETICAL SCENARIO</p><h2>Stress a dependency</h2>
         <form id="scenario-form">
           <label>Failure category<select id="kind"><option value="MARKET_LOSS">Market lender loss</option><option value="ORACLE_STALE">Oracle outage / stale feed</option><option value="CHAIN_OUTAGE">Settlement chain outage</option><option value="ASSET_DEPEG">Asset depeg</option><option value="CONTRACT_EXPLOIT">Vault capital exploit</option><option value="LIQUIDITY_SHOCK">AMM liquidity disruption</option></select></label>
@@ -42,7 +48,8 @@
           <button class="primary" id="simulate" type="submit" disabled>Apply scenario</button><p id="error" role="alert"></p>
         </form>
         <section id="result" aria-live="polite"></section>
-        <section class="exit-panel"><p class="eyebrow">CURRENT REDEMPTION CHECK</p><h2>Assess a public position</h2><form id="exit-form"><label>Public owner address<input id="owner" pattern="0x[0-9a-fA-F]{40}" placeholder="0x… (public address only)" required></label><label>Shares to redeem (raw units, optional)<input id="shares" pattern="[0-9]+" placeholder="Blank = owner's full balance"></label><button id="quote" type="submit">Check withdrawal and estimate gas</button></form><p id="exit-result" aria-live="polite">No owner-specific route has been checked.</p></section>
+        </details>
+        <section class="exit-panel"><p class="eyebrow">CURRENT REDEMPTION CHECK</p><h2>Assess a public position</h2><p class="field-note">Read a holder's actual vault shares and test direct redemption. No wallet connection or transaction. A full checked balance replaces the hypothetical position size.</p><button id="find-holder" type="button">Find a public demo holder</button><p id="holder-result" aria-live="polite"></p><form id="exit-form"><label>Public owner address<input id="owner" pattern="0x[0-9a-fA-F]{40}" placeholder="0x… (public address only)" required></label><label>Shares to redeem (raw units, optional)<input id="shares" pattern="[0-9]+" placeholder="Blank = owner's full balance"></label><button id="quote" type="submit">Check withdrawal and estimate gas</button></form><p id="exit-result" aria-live="polite">No owner-specific route has been checked.</p></section>
       </aside>
     </div>
     <section class="panel coverage-panel"><div class="panel-heading"><div><p class="eyebrow">DISCOVERY COVERAGE</p><h2>Evidence and unresolved dependencies</h2></div></div><div id="coverage"></div></section>

@@ -25,6 +25,8 @@ flowchart TD
 
 ## High-level services (target architecture, not all created)
 
+The updated target adds `observations -> calibrated forecasts -> destination analysis -> allocation proposal -> migration simulation -> bounded delegated executor`. Current `POST /api/assess` implements observational checks only. The executor is a separate future trust boundary, with local-fork testing before live activation. See [automatic assessment/reallocation](AUTOMATION_AND_REALLOCATION.md).
+
 - **Next.js web**: search by chain/address, graph canvas, inspect edge, scenario panel, event timeline, cost comparison, evidence details and export.
 - **TypeScript API**: `POST /inspect`, `GET /jobs/:id`, `GET /graphs/:snapshotId`, `POST /simulate`, `POST /quote-exit`, `GET /monitor/:nodeId`. Async inspection for expensive graphs. Schema validation via Zod.
 - **Discovery worker**: periodically enumerate supported Morpho V1/V2/Pendle vaults with pagination; detect changes; schedule only changed/new snapshots; obey rate limits.

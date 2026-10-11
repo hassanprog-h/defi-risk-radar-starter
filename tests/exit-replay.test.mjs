@@ -35,7 +35,7 @@ function rpc(overrides = {}) {
     ...overrides
   };
 }
-const api = { base: 'https://api.morpho.org', http: { request: async () => ({ data: { assetByAddress: { price: { usd: 2000, timestamp: String(Math.floor(Date.now() / 1000)) } } } }) } };
+const api = { base: 'https://api.morpho.org', http: { request: async (_url, body) => ({ data: { assetByAddress: { price: { usd: body.variables.address === denomination.split(':')[2] ? 1 : 2000, timestamp: String(Math.floor(Date.now() / 1000)) } } } }) } };
 test('redemption combines contract fee and gas with fresh reference prices', async () => {
   const quote = await quoteRedemption(snapshot(), rpc(), api, owner);
   assert.equal(quote.feasible, true);
@@ -61,11 +61,27 @@ test('no balance, restricted withdrawal, failed gas, reorg and stale prices rema
   const reorg = await quoteRedemption(snapshot(), rpc({ sameBlock: async () => false }), api, owner);
   assert.equal(reorg.feasible, null);
   assert.equal(reorg.costUsd, null);
+  const earlyReorg = await quoteRedemption(snapshot(), rpc({ read: async () => 0n, sameBlock: async () => false }), api, owner);
+  assert.equal(earlyReorg.feasible, null);
   const stale = snapshot();
   stale.observations.find(item => item.entityId === denomination && item.metric === 'priceUsd').evidence.blockTimestamp = '2020-01-01T00:00:00.000Z';
-  const unpriced = await quoteRedemption(stale, rpc(), api, owner);
+  const refreshed = await quoteRedemption(stale, rpc(), api, owner);
+  assert.ok(Math.abs(refreshed.costUsd - .21) < 1e-12);
+  const staleApi = { base: api.base, http: { request: async () => ({ data: { assetByAddress: { price: { usd: 1, timestamp: '1' } } } }) } };
+  const unpriced = await quoteRedemption(stale, rpc(), staleApi, owner);
   assert.equal(unpriced.feasible, true);
   assert.equal(unpriced.costUsd, null);
+});
+test('V2 maxWithdraw zero is not an exit failure; redeem simulation must actually succeed', async () => {
+  const data = snapshot(); data.protocol = 'Morpho Vault V2';
+  const original = rpc();
+  const v2 = rpc({ read: async (a, s) => s.includes('maxWithdraw') ? 0n : original.read(a, s) });
+  const quote = await quoteRedemption(data, v2, api, owner);
+  assert.equal(quote.feasible, true);
+  assert.equal(quote.maxWithdrawAssets, '0');
+  assert.ok(quote.reasons.some(r => r.includes('deliberately reports zero')));
+  const failed = await quoteRedemption(data, { ...v2, estimateRedeem: async () => { throw new Error('Unavailable'); } }, api, owner);
+  assert.equal(failed.feasible, null);
 });
 test('decision needs a fresh full exit; expired unavailable assessments cannot block forever', () => {
   const data = snapshot();

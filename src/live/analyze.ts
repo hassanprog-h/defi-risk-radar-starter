@@ -99,7 +99,21 @@ export function analyzeLive(snapshot: LiveSnapshot, scenario: Scenario, context:
       kind: edge.kind, evidenceStatus: edge.evidence.status, explanation: interpretations[edge.kind] ?? 'Contract reference observed; economic consequences require protocol-specific interpretation.'
     })) };
   }) }));
-  return { snapshot, scenario, incident, mechanisms, decision, exposureUsd, positionUsd: size, exit: exit ?? null, blockers,
-    sensitivity: loss !== null && loss > 0 && assumedCost != null ? { label: 'Hypothetical comparison using assumed exit cost; no verified exit decision', assumedExitCostUsd: assumedCost, breakEvenProbability: assumedCost / loss } : null,
+  const decisionRequirements: string[] = [];
+  if (replay) decisionRequirements.push('This is a historical recording; current exit decisions are disabled.');
+  if (size === null) decisionRequirements.push('Enter a hypothetical position value or check a public holder’s full balance.');
+  if (loss === null) decisionRequirements.push('A supported loss model with consistent exposure accounting is required. See the estimate blockers below.');
+  if (p === undefined) decisionRequirements.push('Enter an explicit event-probability assumption for the selected horizon.');
+  if (!exit) decisionRequirements.push('No real redemption has been checked. The assumed exit cost only supports the assumptions-only comparison.');
+  else {
+    if (!freshQuote) decisionRequirements.push('The redemption assessment expired or has no valid timestamp; check withdrawal again.');
+    if (exit.feasible !== true) decisionRequirements.push('Redemption execution has not been established for this owner and amount.');
+    if (exit.fullExit !== true) decisionRequirements.push('The assessment does not cover the owner’s full position.');
+    if (cost === null) decisionRequirements.push('Fresh USD prices are missing from the redemption cost estimate.');
+  }
+  const hypotheticalExpectedLoss = loss !== null && p !== undefined ? loss * p : null;
+  return { snapshot, scenario, incident, mechanisms, decision, exposureUsd, positionUsd: size, exit: exit ?? null, blockers, decisionRequirements,
+    sensitivity: loss !== null && loss > 0 && assumedCost != null ? { label: 'Assumptions-only comparison; exit feasibility has not been established by these inputs', assumedExitCostUsd: assumedCost, expectedLossUsd: hypotheticalExpectedLoss, breakEvenProbability: assumedCost / loss,
+      comparison: hypotheticalExpectedLoss === null ? null : hypotheticalExpectedLoss > assumedCost ? 'EXIT_COST_LOWER' : hypotheticalExpectedLoss < assumedCost ? 'STAY_COST_LOWER' : 'EQUAL_COST' } : null,
     warning: `${replay ? 'HISTORICAL RECORDING' : 'LIVE DEPENDENCIES'} · HYPOTHETICAL FAILURE · Size is user-assumed unless established by a checked balance/reference valuation; event probability is an explicit assumption. No trades are executed.` };
 }

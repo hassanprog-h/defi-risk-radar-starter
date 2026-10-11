@@ -9,6 +9,8 @@ import { inspectVault } from '../dist/live/inspect.js';
 import { analyzeLive } from '../dist/live/analyze.js';
 import { quoteRedemption } from '../dist/live/exit.js';
 import { loadReplay } from '../dist/live/replay.js';
+import { findPublicHolder } from '../dist/live/holders.js';
+import { assessDependencies } from '../dist/live/assess.js';
 import { api, liveOptions } from './live-config.mjs';
 
 const files = new Map([
@@ -87,6 +89,12 @@ export function createViewerServer() {
       if (![`localhost:${port}`, `127.0.0.1:${port}`].includes(request.headers.host)) return json(response, 403, { error: 'Use the local server address' });
       if (request.method === 'POST' && request.headers.origin && ![`http://localhost:${port}`, `http://127.0.0.1:${port}`].includes(request.headers.origin)) return json(response, 403, { error: 'Cross-origin requests are not allowed' });
       if (request.method === 'GET' && path === '/api/status') return json(response, 200, { rpcConfigured: Boolean(process.env.ETHEREUM_RPC_URL), etherscanConfigured: Boolean(process.env.ETHERSCAN_API_KEY), mode: 'read_only' });
+      if (request.method === 'POST' && path === '/api/assess') {
+        try {
+          const body = z.object({ snapshotId: z.string().max(400), positionUsd: z.number().finite().positive().max(1e12).nullable() }).parse(await readBody(request));
+          return json(response, 200, assessDependencies(getSnapshot(body.snapshotId), body.positionUsd));
+        } catch { return json(response, 400, { error: 'Supply a loaded provider snapshot and a positive USD position value (or null).' }); }
+      }
       if (request.method === 'POST' && path === '/api/replay') {
         try {
           const recording = loadReplay(await readBody(request, 2_000_000));
@@ -139,6 +147,16 @@ export function createViewerServer() {
         quotes.set(live.snapshotId, { quoteId, quote });
         return json(response, 200, { ...quote, quoteId });
       }
+      if (request.method === 'POST' && path === '/api/public-holder') {
+        try {
+          const body = z.object({ snapshotId: z.string().max(400) }).parse(await readBody(request));
+          const live = getSnapshot(body.snapshotId);
+          const root = live.nodes.find(n => n.id === live.rootPositionId);
+          const options = liveOptions(`${live.chainId}:${root.address}`);
+          if (!options.rpc) return json(response, 503, { error: 'An RPC endpoint is required to verify public holder balances.' });
+          return json(response, 200, await findPublicHolder(live, options.rpc, api));
+        } catch { return json(response, 503, { error: 'No public example holder could be verified from the first 20 indexed candidates. You can enter a known holder address manually.' }); }
+      }
       if (request.method === 'GET' && path === '/api/demo') {
         return json(response, 200, evaluateFixture(snapshot, defaultScenario));
       }
@@ -160,7 +178,9 @@ export function createViewerServer() {
             const saved = quotes.get(live.snapshotId);
             const quote = input.quoteId && saved?.quoteId === input.quoteId ? saved.quote : undefined;
             const scenario = { id: 'hypothetical-live-stress', kind: input.kind, targetNodeId: input.targetNodeId, horizonHours: input.horizonHours, severityFraction: input.severityFraction, ...(input.probabilityWithinHorizon != null ? { probabilityWithinHorizon: input.probabilityWithinHorizon } : {}) };
-            const context = { positionUsd: quote?.fullExit && quote.positionValueUsd != null ? quote.positionValueUsd : input.positionUsd ?? null, exit: quote, assumedExitCostUsd: input.exitCostUsd };
+            const quoteAge = quote?.quotedAt ? Date.now() - Date.parse(quote.quotedAt) : NaN;
+            const freshValuation = Number.isFinite(quoteAge) && quoteAge >= 0 && quoteAge < 60_000;
+            const context = { positionUsd: freshValuation && quote?.fullExit && quote.positionValueUsd != null ? quote.positionValueUsd : input.positionUsd ?? null, exit: quote, assumedExitCostUsd: input.exitCostUsd };
             return json(response, 200, analyzeLive(live, scenario, context));
           }
           parsed = parseScenario(body, snapshot);

@@ -6,6 +6,8 @@ Belem asks for a working risk engine using **real data** that automatically disc
 
 ## Plain-English analogy
 
+**Updated direction (2026-10-11):** the user reports Belem prefers reallocation and potentially one-time-authorized fund movement, with observation-driven forecasts and an amount-only assessment flow. The target is now automatic assessment, destination comparison and bounded delegated execution. Current code remains read-only. See [the delivery sequence and acceptance criteria](AUTOMATION_AND_REALLOCATION.md).
+
 This is a **software dependency scanner + attack-path simulator + financial loss calculator**. A web app can depend on a DB, auth provider and cloud region; a DeFi vault can depend on a yield source, collateral, price oracle, market, smart contract, administrator, DEX for exit and settlement chain. Failures need not imply money is lost; an outage might simply block withdrawals.
 
 ## North-star product (very ambitious)
@@ -22,15 +24,15 @@ This is a **software dependency scanner + attack-path simulator + financial loss
 1. User selects a real, preselected demo vault or inputs chain + vault address. Later select wallet/portfolio.
 2. System detects vault type, fetches on-chain/API state, discovers typed edges and tells user what is verified vs incomplete.
 3. Interactive graph renders position -> vault -> lending markets -> assets/oracles/exit routes -> infra/controls; click node for evidence and live health.
-4. User selects failing node + scenario type + severity + time horizon; or clicks a live warning and runs a scenario.
+4. Automatically check dependency observations and run supported forecasts; keep manual scenario severity/probability in advanced stress testing. Automatic measurements are implemented; calibrated forecasts are pending.
 5. Rule-based simulator computes **which paths are impacted**, *why*, and whether monetary losses can be justified. Unsupported scenarios show qualitative risk/unknown, not invented money.
 6. Compute feasible redemption or swap exit cost at actual position size and chain status. If impossible, show blocked exit.
 7. Decision report: scenario loss, expected loss only with legitimate probability assumption, break-even probability, exit costs, risk factors, confidence/coverage and citations to raw evidence.
-8. Save/share scenario report, compare snapshots and follow changing exposure (future).
+8. Compare destination exposures and migration costs, propose a qualified allocation and simulate execution; later monitor and execute within bounded user delegation. Save/share reports and changing exposures (future).
 
 ## Roles and story
 
-Primary user: portfolio manager monitoring a 5–20 position portfolio. Secondary user: security/risk analyst examining an oracle failure, compromised bridge, admin upgrade, contract exploit, TVL concentration or unusual on-chain activity. For the hackathon, a read-only analyst dashboard is enough; no trading functionality is expected.
+Primary user: portfolio manager monitoring a 5–20 position portfolio. Secondary user: security/risk analyst examining an oracle failure, compromised bridge, admin upgrade, contract exploit, TVL concentration or unusual on-chain activity. The published brief led to the read-only baseline; subsequent user-reported stakeholder feedback expands the target to reallocation and simulated bounded execution.
 
 ## Dependency scope / ontology
 
@@ -45,7 +47,7 @@ The graph schema should represent all six groups. **Full automated data coverage
 
 ## Scope boundaries
 
-The product does not custody money, sign transactions, auto-execute trades, predict hacks with certainty, certify smart-contract safety, or provide a guaranteed forecast. It is an exploratory risk decision-support prototype.
+The implemented product does not custody money, sign transactions or execute trades. Future execution requires a tested permission mechanism and explicit live activation. It must not predict hacks with certainty, certify contract safety or guarantee forecasts. An exploratory amount alone does not authorize fund movement.
 
 ## Two demonstration positions vs hundreds of scanned vaults
 

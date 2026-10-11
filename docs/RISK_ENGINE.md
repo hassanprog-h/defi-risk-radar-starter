@@ -1,5 +1,7 @@
 # Failure simulation and stay/exit decision — financial primer
 
+The binary comparator is the advanced stress-test baseline. The updated target derives forecasts from evidence and compares reallocations including destination risk. See [forecasting, calibration and allocation requirements](AUTOMATION_AND_REALLOCATION.md). Automatic observation checks are implemented; calibrated probability/severity models are not installed yet.
+
 ## Finance concepts in developer language
 
 - **Position:** Your stake in a strategy, e.g. $10,000 of vault shares.

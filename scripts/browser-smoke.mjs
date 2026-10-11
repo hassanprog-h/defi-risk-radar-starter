@@ -8,7 +8,7 @@ await new Promise((resolve, reject) => { server.once('error', reject); server.li
 const base = `http://127.0.0.1:${server.address().port}`;
 let browser;
 try {
-  browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+  browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}), args: ['--no-sandbox'] });
   const page = await browser.newPage({ viewport: { width: 1600, height: 1050 } });
   page.setDefaultTimeout(180000);
   const errors = [];
@@ -25,7 +25,19 @@ try {
   assert.ok(live.snapshot.nodes.length > 20);
   assert.equal(await page.locator('g.node').count(), live.snapshot.nodes.length);
   assert.equal(await page.locator('g.edge-group').count(), live.snapshot.edges.length);
+  assert.equal(await page.locator('g.node.affected').count(), 0, 'Closed stress tests must not paint hypothetical failures onto the default graph');
   assert.ok(await page.locator('#graph').boundingBox());
+  await page.locator('#assessment-usd').fill('10000');
+  await page.waitForFunction(() => !document.getElementById('assess').disabled);
+  const assessmentResponse = page.waitForResponse(r => r.url().endsWith('/api/assess'));
+  await page.locator('#assess').click();
+  const assessment = await (await assessmentResponse).json();
+  assert.equal(assessment.positionUsd, 10000);
+  assert.equal(assessment.forecast.probabilityWithinHorizon, null);
+  assert.equal(assessment.allocation.executionEnabled, false);
+  await page.waitForFunction(() => !document.getElementById('assess').disabled);
+  assert.match(await page.locator('#assessment-result').innerText(), /calibrated forecasting model/);
+  await page.locator('#advanced-scenario > summary').click();
   for (const secret of [process.env.ETHERSCAN_API_KEY, process.env.ETHEREUM_RPC_URL]) {
     if (secret) assert.equal(JSON.stringify(live).includes(secret), false, 'Credentials must not appear in the live report');
   }
@@ -70,6 +82,38 @@ try {
   assert.equal(live.snapshot.protocol, 'Morpho Vault V2');
   assert.ok(live.snapshot.nodes.some(node => node.kind === 'amm'));
   assert.ok(live.snapshot.nodes.some(node => node.kind === 'yield_source'));
+  assert.ok(live.snapshot.observations.some(o => o.metric === 'accountingPinned' && o.value === true), 'V2 numeric accounting must be pinned and reconciled');
+  await page.locator('#position-usd').fill('10000');
+  await page.locator('#probability').fill('25');
+  await page.locator('#exit-cost').fill('500');
+  const v2Exposure = live.snapshot.exposures.find(e => e.fraction > 0);
+  await page.locator('#target').selectOption(v2Exposure.marketId);
+  const simulatedResponse = page.waitForResponse(r => r.url().endsWith('/api/simulate'));
+  await page.locator('#simulate').click();
+  const simulated = await (await simulatedResponse).json();
+  await page.waitForFunction(() => !document.getElementById('simulate').disabled);
+  assert.equal(simulated.incident.incrementalLossIfStayingUsd, 10000 * v2Exposure.fraction * .2);
+  assert.match(await page.locator('.sensitivity-card').innerText(), /Staying has lower modelled cost/);
+  assert.match(await page.locator('.requirements-card').innerText(), /No real redemption has been checked/);
+  const holderResponse = page.waitForResponse(r => r.url().endsWith('/api/public-holder'));
+  await page.locator('#find-holder').click();
+  const holder = await (await holderResponse).json();
+  await page.waitForFunction(() => !document.getElementById('find-holder').disabled);
+  assert.match(holder.owner, /^0x[0-9a-f]{40}$/);
+  assert.equal(await page.locator('#owner').inputValue(), holder.owner);
+  const quoteResponse = page.waitForResponse(r => r.url().endsWith('/api/quote-exit'));
+  const checkedResponse = page.waitForResponse(r => r.url().endsWith('/api/simulate'));
+  await page.locator('#quote').click();
+  const checkedQuote = await (await quoteResponse).json();
+  const checkedReport = await (await checkedResponse).json();
+  await page.waitForFunction(() => !document.getElementById('simulate').disabled);
+  assert.equal(checkedQuote.feasible, true);
+  assert.equal(checkedQuote.maxWithdrawAssets, '0');
+  assert.equal(checkedQuote.fullExit, true);
+  assert.ok(checkedQuote.costUsd >= 0);
+  assert.ok(['STAY', 'EXIT'].includes(checkedReport.decision.action));
+  await page.locator('#owner').fill('0x' + '1'.repeat(40));
+  assert.match(await page.locator('#result').innerText(), /previous checked decision has been cleared/);
   await page.locator('#kind').selectOption('LIQUIDITY_SHOCK');
   await page.locator('#simulate').click();
   await page.waitForFunction(() => document.getElementById('simulate').disabled === false);

@@ -22,6 +22,8 @@ Compare deterministic API/ABI baseline versus static source/traces and optional 
 
 ## Risk/backtest methodology
 
+The automatic forecasting/reallocation target additionally requires chronological probability calibration, quiet-period false-alarm evaluation and replay of feasible source-to-destination migrations. Benchmark retained shared risks and destination loss, not just avoided source loss. Permission-boundary and local-fork execution checks are separate from forecast accuracy. See [acceptance criteria](AUTOMATION_AND_REALLOCATION.md).
+
 - Pick a historical on-chain incident with available replay evidence and a relevant supported protocol, rather than choosing a famous incident unrelated to our adapter.
 - Freeze state to block *before* event or first detectable signal; avoid future information leaking into the model.
 - Reconstruct exposure / applicable oracles / liquidity and available exit paths at that time. If an archive or historical liquidity data are missing, say so and narrow claim.
