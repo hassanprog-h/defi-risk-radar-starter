@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 import { createViewerServer } from './viewer-server.mjs';
 
@@ -51,6 +52,32 @@ try {
   await page.locator('g.node.vault').first().click();
   assert.ok((await page.locator('#evidence').innerText()).includes('eip155:1:'));
   await page.screenshot({ path: '/tmp/defi-risk-radar-live.png', fullPage: true });
+  await page.locator('#recording').setInputFiles(new URL('../fixtures/recordings/steakhouse-usdc.json', import.meta.url).pathname);
+  await page.waitForFunction(() => document.getElementById('mode-badge').textContent === 'HISTORICAL RECORDING');
+  assert.equal(await page.locator('#quote').isDisabled(), true);
+  await page.locator('#position-usd').fill('10000');
+  await page.locator('#simulate').click();
+  await page.waitForFunction(() => document.getElementById('simulate').disabled === false);
+  assert.match(await page.locator('#result').innerText(), /INSUFFICIENT EVIDENCE/);
+  assert.equal((await page.locator('#result').innerText()).includes('Conditional additional loss\nUnknown'), false);
+  const saved = JSON.parse(await readFile(new URL('../fixtures/recordings/steakhouse-usdc.json', import.meta.url)));
+  const malformed = { ...saved, edges: [{ ...saved.edges[0], to: 'missing' }] };
+  const invalidRecording = await fetch(base + '/api/replay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(malformed) });
+  assert.equal(invalidRecording.status, 400);
+  await page.locator('#example').selectOption('1:0x04422053aDDbc9bB2759b248B574e3FCA76Bc145');
+  await page.locator('#inspect').click();
+  await page.waitForFunction(() => document.getElementById('mode-badge').textContent === 'LIVE SNAPSHOT' && !document.getElementById('inspect').disabled);
+  assert.equal(live.snapshot.protocol, 'Morpho Vault V2');
+  assert.ok(live.snapshot.nodes.some(node => node.kind === 'amm'));
+  assert.ok(live.snapshot.nodes.some(node => node.kind === 'yield_source'));
+  await page.locator('#kind').selectOption('LIQUIDITY_SHOCK');
+  await page.locator('#simulate').click();
+  await page.waitForFunction(() => document.getElementById('simulate').disabled === false);
+  assert.match(await page.locator('#result').innerText(), /INSUFFICIENT EVIDENCE/);
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2), 'Live mobile layout must not overflow');
+  await page.setViewportSize({ width: 1600, height: 1050 });
+  await page.screenshot({ path: '/tmp/defi-risk-radar-v2.png', fullPage: true });
   const fixtureLoaded = page.waitForResponse(response => response.url().endsWith('/api/demo'));
   await page.locator('#fixture').click(); await fixtureLoaded;
   await page.waitForFunction(() => document.getElementById('mode-badge').textContent === 'FIXTURE DEMO');
@@ -68,7 +95,7 @@ try {
   const missing = await fetch(base + '/.env'); assert.equal(missing.status, 404);
   const crossOrigin = await fetch(base + '/api/inspect', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://example.com' }, body: '{}' });
   assert.equal(crossOrigin.status, 403);
-  console.log(JSON.stringify({ browser: 'passed', liveNodes: live.snapshot.nodes.length, liveEdges: live.snapshot.edges.length, scenarios: ['market_loss', 'oracle_stale', 'chain_outage'], fixtureNodes: 9, responsive: 'passed', screenshots: ['/tmp/defi-risk-radar-live.png', '/tmp/defi-risk-radar-mobile.png'] }, null, 2));
+  console.log(JSON.stringify({ browser: 'passed', liveNodes: live.snapshot.nodes.length, liveEdges: live.snapshot.edges.length, scenarios: ['market_loss', 'oracle_stale', 'chain_outage'], replay: 'passed', fixtureNodes: 9, responsive: 'passed', screenshots: ['/tmp/defi-risk-radar-live.png', '/tmp/defi-risk-radar-mobile.png'] }, null, 2));
 } finally {
   await browser?.close();
   await new Promise(resolve => server.close(resolve));

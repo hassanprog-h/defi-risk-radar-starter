@@ -1,7 +1,7 @@
 const $ = id => document.getElementById(id);
 const svgNS = 'http://www.w3.org/2000/svg';
 const money = value => value == null ? 'Unknown' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(value);
-const targetKinds = { MARKET_LOSS: 'lending_market', ORACLE_STALE: 'oracle', CHAIN_OUTAGE: 'chain', ASSET_DEPEG: 'asset', CONTRACT_EXPLOIT: 'vault' };
+const targetKinds = { MARKET_LOSS: 'lending_market', ORACLE_STALE: 'oracle', CHAIN_OUTAGE: 'chain', ASSET_DEPEG: 'asset', CONTRACT_EXPLOIT: 'vault', LIQUIDITY_SHOCK: 'amm' };
 let report;
 let selected;
 let activeQuoteId;
@@ -183,7 +183,7 @@ function renderResult() {
   const fixture = report.snapshot.mode === 'fixture';
   container.replaceChildren(element('p', fixture ? 'SIMPLIFIED FIXTURE COMPARISON' : 'MODELLED IMPACT · CONDITIONAL DECISION', 'eyebrow'), element('div', decision.action.replaceAll('_', ' '), `decision ${decision.action}`));
   const metrics = {
-    'Position value (fixture or assumption)': money(fixture ? report.snapshot.rootPositionUsd : report.positionUsd),
+    [fixture ? 'Position value (fixture)' : report.exit?.fullExit && report.exit.positionValueUsd === report.positionUsd ? 'Position value (checked balance/reference)' : 'Assumed position value']: money(fixture ? report.snapshot.rootPositionUsd : report.positionUsd),
     'Conditional additional loss': money(incident.incrementalLossIfStayingUsd),
     'Expected loss (assumed probability)': money(decision.estimatedExpectedLossUsd),
     'Exit cost': money(decision.exitCostUsd),
@@ -231,6 +231,7 @@ function populateTargets() {
   }
   if ([...$('target').options].some(option => option.value === previous)) $('target').value = previous;
   $('severity-label').hidden = !['MARKET_LOSS', 'CONTRACT_EXPLOIT'].includes($('kind').value);
+  $('simulate').disabled = $('target').options.length === 0;
   if (selected) renderEvidence();
 }
 $('kind').addEventListener('change', populateTargets);
@@ -364,6 +365,11 @@ async function inspectLive() {
   finally { if (sequence === activeInspection) { $('inspect').disabled = false; $('simulate').disabled = !report; } }
 }
 $('inspect-form').addEventListener('submit', event => { event.preventDefault(); inspectLive(); });
+$('example').addEventListener('change', () => {
+  const [chainId, address] = $('example').value.split(':');
+  $('chain-id').value = chainId; $('vault-address').value = address;
+  $('activity').textContent = 'Example selected. Inspect live vault rebuilds its graph from provider data.';
+});
 $('fixture').addEventListener('click', async () => {
   ++activeInspection; $('inspect').disabled = false;
   try { const response = await fetch('/api/demo'); if (!response.ok) throw new Error('Fixture unavailable'); showReport(await response.json()); $('activity').textContent = 'Fixture loaded explicitly. Select Inspect live vault to return to current provider data.'; }
@@ -401,15 +407,19 @@ $('catalogue-version').addEventListener('change', () => { cursor = undefined; $(
 $('chain-id').addEventListener('change', () => { cursor = undefined; $('more-catalogue').hidden = true; $('catalogue').replaceChildren(element('option', 'Load the catalogue for this chain…')); });
 $('exit-form').addEventListener('submit', async event => {
   event.preventDefault(); if (!report || report.snapshot.mode !== 'live') return;
+  const quotedSnapshotId = report.snapshot.snapshotId;
+  const quotedOwner = $('owner').value.trim(), quotedShares = $('shares').value.trim();
+  activeQuoteId = undefined;
   $('quote').disabled = true; $('exit-result').textContent = 'Reading owner balances, withdrawal limits and redemption preview; estimating gas…';
   try {
     const response = await fetch('/api/quote-exit', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ snapshotId: report.snapshot.snapshotId, owner: $('owner').value.trim(), ...($('shares').value.trim() ? { shares: $('shares').value.trim() } : {}) }) });
     const quote = await response.json(); if (!response.ok) throw new Error(quote.error);
+    if (report.snapshot.snapshotId !== quotedSnapshotId || $('owner').value.trim() !== quotedOwner || $('shares').value.trim() !== quotedShares) return;
     activeQuoteId = quote.quoteId;
     $('exit-result').textContent = `Feasible: ${quote.feasible === null ? 'unknown' : quote.feasible ? 'yes, at quoted state' : 'no for this amount'} · ${quote.fullExit ? 'full balance' : 'partial / unknown'}\nEstimated cost: ${money(quote.costUsd)} · block ${quote.sourceBlock ?? 'unknown'}\n${quote.reasons.join('\n')}`;
     $('scenario-form').requestSubmit();
   } catch (error) { $('exit-result').textContent = `Redemption assessment failed: ${error.message}`; }
-  finally { $('quote').disabled = false; }
+  finally { $('quote').disabled = report.snapshot.mode !== 'live'; }
 });
 for (const id of ['owner', 'shares']) $(id).addEventListener('input', () => {
   activeQuoteId = undefined;

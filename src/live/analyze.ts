@@ -90,6 +90,7 @@ export function analyzeLive(snapshot: LiveSnapshot, scenario: Scenario, context:
     CLAIM_ON: 'Principal redemption depends on the configured yield source and protocol redemption mechanics.',
     WRAPS: 'Wrapper conversion depends on the referenced token; conversion terms and backing must be checked.',
     USES_AMM: 'The configured market can influence pricing or execution; a real liquidity model is needed for slippage.',
+    TRADED_ON: 'Associated trading venue. Pool disruption may affect liquidation or sale routes; this is not proof that the lending oracle uses the pool or that an exit is feasible.',
     CONTROLLED_BY: 'Configured authority is a control dependency; authority alone does not establish a financial haircut.'
   };
   const mechanisms = paths.map(path => ({ path, steps: path.slice(1).map((dependent, index) => {
@@ -100,5 +101,5 @@ export function analyzeLive(snapshot: LiveSnapshot, scenario: Scenario, context:
   }) }));
   return { snapshot, scenario, incident, mechanisms, decision, exposureUsd, positionUsd: size, exit: exit ?? null, blockers,
     sensitivity: loss !== null && loss > 0 && assumedCost != null ? { label: 'Hypothetical comparison using assumed exit cost; no verified exit decision', assumedExitCostUsd: assumedCost, breakEvenProbability: assumedCost / loss } : null,
-    warning: `${replay ? 'HISTORICAL RECORDING' : 'LIVE DEPENDENCIES'} · HYPOTHETICAL FAILURE · USD size and event probability are user assumptions; no trades are executed.` };
+    warning: `${replay ? 'HISTORICAL RECORDING' : 'LIVE DEPENDENCIES'} · HYPOTHETICAL FAILURE · Size is user-assumed unless established by a checked balance/reference valuation; event probability is an explicit assumption. No trades are executed.` };
 }

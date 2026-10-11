@@ -56,7 +56,10 @@ export class MorphoClient {
   async vault(chainId: number, address: string, version: 1 | 2) {
     const raw = await this.http.request(this.base + '/graphql', { query: version === 1 ? v1Query : v2Query, variables: { address, chainId } });
     const envelope = z.object({ data: z.record(z.string(), z.unknown()).nullish(), errors: z.array(z.unknown()).optional() }).parse(raw);
-    if (envelope.errors?.length) throw new ProviderError('GRAPHQL_ERROR');
+    if (envelope.errors?.length) {
+      const notFound = envelope.errors.every(error => error !== null && typeof error === 'object' && 'status' in error && error.status === 'NOT_FOUND');
+      throw new ProviderError(notFound ? 'NOT_INDEXED' : 'GRAPHQL_ERROR', notFound ? 404 : undefined);
+    }
     const value = envelope.data?.[version === 1 ? 'vaultByAddress' : 'vaultV2ByAddress'];
     if (!value) throw new ProviderError('NOT_INDEXED', 404);
     try {

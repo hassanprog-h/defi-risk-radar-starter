@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { MorphoClient, parseSelector, addressSchema, rawInteger, type VaultV1, type VaultV2 } from '../connectors/morpho.js';
 import { ProviderError } from '../connectors/http.js';
 import { SourceClient } from '../connectors/source.js';
+import { PendleClient } from '../connectors/pendle.js';
 import { MorphoAdapter } from '../adapters/morpho.js';
+import { discoverPendleVenues } from '../adapters/pendle.js';
 import { discoverErc4626 } from '../adapters/erc4626.js';
 import { GraphBuilder, evmId, ZERO } from './builder.js';
 import { enrich } from './enrich.js';
@@ -19,16 +21,21 @@ export async function inspectVault(selector: string, options: InspectOptions = {
   let apiFailure = 'NOT_INDEXED';
   for (const version of [1, 2] as const) {
     try {
-      const config = z.object({ data: z.object({ chain_id: z.number().int(), address: addressSchema, last_indexed_block: rawInteger,
-        gates: z.record(z.string(), addressSchema.nullable()).optional(), adapter_registry: addressSchema.nullable().optional(), liquidity_adapter: addressSchema.nullable().optional()
-      }) }).parse(await api.rest(`/v0/vaults-v${version}/${chainId}:${address}`));
-      if (config.data.chain_id !== chainId || config.data.address !== address) throw new ProviderError('IDENTITY_MISMATCH');
-      rest = config.data;
+      try {
+        const config = z.object({ data: z.object({ chain_id: z.number().int(), address: addressSchema, last_indexed_block: rawInteger,
+          gates: z.record(z.string(), addressSchema.nullable()).optional(), adapter_registry: addressSchema.nullable().optional(), liquidity_adapter: addressSchema.nullable().optional()
+        }) }).parse(await api.rest(`/v0/vaults-v${version}/${chainId}:${address}`));
+        if (config.data.chain_id !== chainId || config.data.address !== address) throw new ProviderError('IDENTITY_MISMATCH');
+        rest = config.data;
+      } catch (error) {
+        if (!(error instanceof ProviderError) || error.code !== 'NOT_INDEXED') throw error;
+        rest = undefined; // REST listing/config absence is not proof GraphQL lacks an unlisted vault.
+      }
       vault = await api.vault(chainId, address, version);
       builder.snapshot.protocol = `Morpho Vault V${version}`;
-      builder.snapshot.blockNumber = 'state' in vault ? vault.state?.blockNumber ?? rest.last_indexed_block : rest.last_indexed_block;
+      builder.snapshot.blockNumber = 'state' in vault ? vault.state?.blockNumber ?? rest?.last_indexed_block ?? null : rest?.last_indexed_block ?? null;
       builder.snapshot.blockTimestamp = 'state' in vault && vault.state ? new Date(Number(vault.state.timestamp) * 1000).toISOString() : null;
-      builder.snapshot.providerStatus.push({ provider: 'morpho', status: 'ok', blockNumber: builder.snapshot.blockNumber, observedAt: builder.snapshot.observedAt });
+      builder.snapshot.providerStatus.push({ provider: 'morpho', status: 'ok', blockNumber: builder.snapshot.blockNumber ?? undefined, observedAt: builder.snapshot.observedAt });
       break;
     } catch (error) {
       apiFailure = error instanceof ProviderError ? error.code : 'UPSTREAM_SCHEMA_MISMATCH';
@@ -58,6 +65,7 @@ export async function inspectVault(selector: string, options: InspectOptions = {
     builder.snapshot.coverage.oracle = 'partial';
     if ('state' in vault && vault.state) builder.snapshot.coverage.lending = 'verified';
     if (!('state' in vault)) builder.unknown(builder.snapshot.rootPositionId, 'snapshot_consistency', 'V2 GraphQL allocations have no per-query block anchor; REST index height does not establish atomicity.');
+    if (!rest && !('state' in vault)) builder.unknown(builder.snapshot.rootPositionId, 'governance', 'REST gate configuration is unavailable; V2 gates have not been enumerated.');
     if (rest?.gates) for (const [role, gate] of Object.entries(rest.gates)) {
       if (!gate || gate === ZERO) continue;
       const evidence = { ...builder.api(`data.gates.${role}`, rest.last_indexed_block), reference: `${api.base}/v0/vaults-v2/${chainId}:${address}` };
@@ -71,6 +79,7 @@ export async function inspectVault(selector: string, options: InspectOptions = {
     await discoverErc4626(builder, rpc, address);
   }
   if (rpc && options.enrichment !== false) {
+    await discoverPendleVenues(builder, rpc, new PendleClient(api.http));
     await enrich(builder, rpc, options.source);
     builder.snapshot.providerStatus.push({ provider: 'etherscan', status: options.source ? builder.snapshot.unknowns.some(item => item.category === 'source') ? 'degraded' : 'ok' : 'not_configured', observedAt: builder.snapshot.observedAt, message: options.source ? 'Per-contract source failures and budgets are listed in unknowns.' : undefined });
   }

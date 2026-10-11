@@ -1,5 +1,7 @@
 # Copy/paste this instruction into Codex
 
+**Implementation status:** the original M1 request below has been completed. The user later authorized broader development; live dashboard, V2 traversal, Pendle venue enrichment, scenarios, redemption assessment and recording stress tests are now present. Read the current README and [delivery status](docs/ROADMAP.md) before choosing further work. Do not recreate the original fixture-only architecture or assume every roadmap milestone is complete.
+
 You are beginning the **DeFi Risk Radar** implementation for the EPFL/Belem Capital DeFi Risk Dependency Challenge.
 
 First, read `README.md`, `AGENTS.md`, `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, `docs/GRAPH_AND_DISCOVERY.md`, `docs/RISK_ENGINE.md`, `docs/ROADMAP.md`, `docs/REFERENCES.md`, and `docs/EVALUATION.md`. Inspect the existing fixture-only TypeScript domain core and run `npm test` and `npm run demo`.

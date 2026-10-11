@@ -12,7 +12,7 @@
     "check:providers": "npm run build && node scripts/check-providers.mjs",
     "build": "tsc -p tsconfig.json",
     "demo": "npm run build && node scripts/demo.mjs",
-    "test": "npm run build && node --test tests/*.test.mjs",
+    "test": "npm run build && node scripts/test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "replay": "npm run build && node scripts/replay.mjs",
     "test:browser": "npm run build && node scripts/browser-smoke.mjs"

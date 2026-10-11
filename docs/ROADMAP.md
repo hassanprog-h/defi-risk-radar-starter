@@ -2,6 +2,23 @@
 
 **Rule:** Build a working proof at every step. Do not declare a feature complete because a schema contains its node type. "Any vault" means the engine accepts any vault address and reports what it can verify, not complete universal semantic understanding.
 
+## Delivery status — 2026-10-11
+
+The user subsequently authorized building the broader application. M1 is implemented and checked with two real V1 vaults. Working portions of M2–M6 are now integrated into the local dashboard; the milestones below remain the target acceptance criteria, not blanket completion claims.
+
+| Milestone | Current state |
+| --- | --- |
+| M0 | Fixture core and visual explorer functional |
+| M1 | Live V1 adapter, RPC corroboration, actual JSON CLI, network/provenance metadata, captured-response tests and two real vault checks implemented |
+| M2 | V2 adapter/nested traversal, paginated vault directory, GraphQL unlisted fallback, generic ERC-4626 accounting and bounded source/proxy enrichment implemented; V2 inner-page pagination and atomic accounting remain incomplete |
+| M3 | Live address selector, graph interaction, evidence, coverage, scenarios and export implemented with native SVG/JavaScript and a local Node API; no React Flow dependency required for this slice |
+| M4 | Snapshot measurements, feed round data, conditional market-loss and explicit vault-capital stress implemented; borrower bad-debt/liquidation models remain pending |
+| M5 | Public-owner direct redemption preview, limits, read-only gas estimate, quote freshness and qualified decisions implemented; swap execution quotes, queues and advanced route models remain pending |
+| M6 | Pendle PT/SY links and associated venues corroborated inside real Morpho graphs; documented USDC issuer identity and selected wrappers/proxies implemented; complete protocol position adapters and backing discovery remain pending |
+| M7–M8 | Research and platform goals remain pending |
+
+Saved real-provider graphs can be imported for explicitly labelled hypothetical historical stress testing. This is not a calibrated real-incident replay benchmark. See [implementation details](IMPLEMENTATION.md) and the README for measured graphs, commands and limitations.
+
 ## Milestone 0 — Executable domain seed (included)
 
 - Typed node/edge model with structural + financial relationship types.
@@ -11,7 +28,7 @@
 - CLI fixture demo; unit tests.
 - **Check:** `npm run demo && npm test` runs without external API access after dependency install.
 - **State:** demo fixture only, not live blockchain.
-- **Local visual explorer:** `npm run dev` serves the full fixture graph at http://localhost:3000 with evidence inspection, affected-path highlighting, hypothetical scenario controls and JSON export. It reuses the domain seed; live address inspection and the M3 live dashboard remain pending.
+- **Local visual explorer:** `npm run dev` serves live inspection at http://localhost:3000. Load the separate fixture explicitly using **Load fixture demo**.
 
 ## Milestone 1 — FIRST CODEX TASK: single real Morpho Vault V1 end-to-end discovery
 

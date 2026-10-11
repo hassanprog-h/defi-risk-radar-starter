@@ -7,6 +7,8 @@ import { inspectVault } from '../dist/live/inspect.js';
 import { analyzeLive } from '../dist/live/analyze.js';
 import { GraphBuilder } from '../dist/live/builder.js';
 import { MorphoAdapter } from '../dist/adapters/morpho.js';
+import { discoverErc4626 } from '../dist/adapters/erc4626.js';
+import { SourceClient } from '../dist/connectors/source.js';
 import { traceAffectedPaths, validateSnapshot } from '../dist/core/graph.js';
 
 const captures = ['morpho-v1-beef0173.json', 'morpho-v1-2371e134.json', 'morpho-v2-04422053.json'].map(file => JSON.parse(readFileSync(new URL(`../fixtures/upstream/${file}`, import.meta.url))));
@@ -49,6 +51,24 @@ test('captured V2 graph traverses adapter -> underlying markets', async () => {
   assert.ok(snapshot.exposures.every(item => item.path.length === 3));
   assert.ok(snapshot.unknowns.some(item => item.category === 'snapshot_consistency'));
 });
+test('unlisted REST absence still permits the documented GraphQL discovery path', async () => {
+  const capture = captures[0];
+  const api = new MorphoClient(new JsonClient(async url => url.endsWith('/graphql') ? Response.json(capture.body) : new Response('', { status: 404 })));
+  const result = await inspectVault(`1:${capture.variables.address}`, { api, enrichment: false });
+  assert.equal(result.protocol, 'Morpho Vault V1');
+  assert.ok(result.exposures.length > 0);
+});
+test('V1 GraphQL NOT_FOUND permits V2 detection; other GraphQL errors stay explicit', async () => {
+  const capture = captures[2];
+  const api = new MorphoClient(new JsonClient(async (url, init) => {
+    if (!url.endsWith('/graphql')) return new Response('', { status: 404 });
+    return Response.json(JSON.parse(init.body).query.includes('vaultV2ByAddress') ? capture.body : { data: null, errors: [{ message: 'No results matching given parameters', status: 'NOT_FOUND', extensions: {} }] });
+  }));
+  const result = await inspectVault(`1:${capture.variables.address}`, { api, enrichment: false });
+  assert.equal(result.protocol, 'Morpho Vault V2');
+  const failed = new MorphoClient(new JsonClient(async () => Response.json({ data: null, errors: [{ status: 'INTERNAL_SERVER_ERROR' }] })));
+  await assert.rejects(() => failed.vault(1, capture.variables.address, 1), error => error.code === 'GRAPHQL_ERROR');
+});
 test('address validation rejects malformed and unsafe selectors; identities remain network-specific', () => {
   for (const input of ['0x123', '0:0x' + 'a'.repeat(40), '1:../../.env', '9007199254740992:0x' + 'a'.repeat(40)]) assert.throws(() => parseSelector(input));
   assert.equal(parseSelector('eip155:1:0x' + 'A'.repeat(40)).address, '0x' + 'a'.repeat(40));
@@ -66,6 +86,24 @@ test('null oracle is explicit and missing allocation shape is rejected', async (
   raw.state.allocation[0].market = null;
   assert.equal(v1Schema.safeParse(raw).success, false);
   assert.equal(v2Schema.safeParse({}).success, false);
+});
+test('changing allocations updates snapshot fractions without permanent edge weights', async () => {
+  const original = await inspectVault(`1:${captures[0].variables.address}`, { api: mockApi(captures[0]), enrichment: false });
+  const changed = structuredClone(captures[0]);
+  const first = changed.body.data.vaultByAddress.state.allocation[0];
+  first.supplyAssets = '1';
+  const latest = await inspectVault(`1:${changed.variables.address}`, { api: mockApi(changed), enrichment: false });
+  assert.equal(original.exposures[0].marketId, latest.exposures[0].marketId);
+  assert.ok(latest.exposures[0].fraction < original.exposures[0].fraction);
+  assert.ok(latest.edges.every(edge => edge.allocationBps === undefined));
+});
+test('generic vault detection reports unsupported contracts; unverified source does not invent dependencies', async () => {
+  const address = captures[0].variables.address.toLowerCase();
+  const b = new GraphBuilder(1, address);
+  await assert.rejects(() => discoverErc4626(b, { code: async () => '0x' }, address), /ADDRESS_HAS_NO_CONTRACT_CODE/);
+  await assert.rejects(() => discoverErc4626(b, { code: async () => '0x1234', read: async () => { throw new Error('Unknown ABI'); } }, address), /UNSUPPORTED_CONTRACT/);
+  const source = new SourceClient('test-only-key', new JsonClient(async () => Response.json({ status: '1', result: [{ ABI: 'Contract source code not verified', SourceCode: '', ContractName: '', Proxy: '0', Implementation: '' }] })));
+  await assert.rejects(() => source.contract(1, address), error => error.code === 'UNVERIFIED_SOURCE' && !error.message.includes('test-only-key'));
 });
 test('proportional loss uses deployed snapshots and refuses inconsistent or duplicated exposures', async () => {
   const snapshot = await inspectVault(`1:${captures[0].variables.address}`, { api: mockApi(captures[0]), enrichment: false });

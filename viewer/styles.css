@@ -44,6 +44,7 @@ input[type=range] { display:block; width:100%; margin:12px 0 0; accent-color:var
 .metric { display:flex; justify-content:space-between; gap:12px; font-size:11px; margin:9px 0; color:var(--muted); } .metric strong { color:var(--text); font-weight:550; }
 .explanation { font-size:11px; margin:15px 0 10px; } details { font-size:11px; color:var(--muted); } summary { cursor:pointer; color:#b6c9df; } ul { padding-left:18px; } li { margin:6px 0; }
 .evidence-panel { margin-top:20px; } #evidence { padding:20px; } .selection-meta { display:flex; flex-wrap:wrap; gap:12px 30px; margin-bottom:14px; color:var(--muted); font-size:12px; }
+.selection-meta span { overflow-wrap:anywhere; min-width:0; max-width:100%; }
 .relationship-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px; } .relationship { text-align:left; padding:14px; background:#0d1724; }
 .relationship strong { display:block; color:var(--mint); font-size:10px; margin:5px 0; } .relationship small { color:#d5bb8d; font-size:10px; }
 .evidence-facts { display:grid; grid-template-columns:110px 1fr; gap:8px; font-size:12px; } .evidence-facts dt { color:var(--muted); } .evidence-facts dd { margin:0; overflow-wrap:anywhere; }
@@ -57,6 +58,7 @@ footer { text-align:center; color:#8d9eb3; font-size:11px; padding:5px 25px 30px
 .coverage-panel { margin-top:20px; } #coverage { padding:20px; } .coverage-grid { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px; }
 .coverage-item { border:1px solid var(--line); border-radius:6px; padding:9px 14px; font-size:11px; color:var(--muted); } .coverage-item strong { display:block; color:var(--mint); font-size:12px; }
 .exit-panel { border-top:1px solid var(--line); margin-top:24px; padding-top:20px; } .exit-panel h2 { margin-bottom:16px; } .exit-panel button { width:100%; font-size:11px; }
+.catalogue-controls label,.graph-tools label { min-width:0; max-width:100%; }
 #exit-result { font-size:11px; margin-top:12px; white-space:pre-line; } .observation-list { font-size:12px; color:var(--muted); margin-top:15px; }
 .node.yield_source rect,.node.issuer rect { stroke:#61b3bb; }
 @media(max-width:1150px) { .workspace { grid-template-columns:1fr; } .scenario-panel { max-width:none; } .input-pair { max-width:450px; } }

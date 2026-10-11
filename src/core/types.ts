@@ -8,7 +8,7 @@ export type EdgeKind =
   | "HOLDS_SHARES_IN" | "ALLOCATES_TO" | "USES_ORACLE" | "ACCEPTS_COLLATERAL"
   | "ACCOUNTING_ASSET" | "BACKED_BY" | "EARNS_YIELD_FROM"
   | "SETTLES_ON" | "CONTROLLED_BY" | "UPGRADEABLE_BY"
-  | "BRIDGED_BY" | "EXITS_THROUGH" | "USES_CONTRACT" | "CLAIM_ON" | "WRAPS" | "PRICED_IN" | "USES_PRICE_FEED" | "USES_AMM";
+  | "BRIDGED_BY" | "EXITS_THROUGH" | "USES_CONTRACT" | "CLAIM_ON" | "WRAPS" | "PRICED_IN" | "USES_PRICE_FEED" | "USES_AMM" | "TRADED_ON";
 
 export type EvidenceStatus = "verified" | "inferred" | "unresolved";
 

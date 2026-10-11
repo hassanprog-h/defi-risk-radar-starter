@@ -18,7 +18,7 @@ const files = new Map([
 ]);
 const targets = {
   MARKET_LOSS: 'lending_market', ORACLE_STALE: 'oracle', CHAIN_OUTAGE: 'chain',
-  ASSET_DEPEG: 'asset', CONTRACT_EXPLOIT: 'vault', LIQUIDITY_SHOCK: 'exit_route'
+  ASSET_DEPEG: 'asset', CONTRACT_EXPLOIT: 'vault', LIQUIDITY_SHOCK: 'amm'
 };
 function json(response, status, value) {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });

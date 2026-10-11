@@ -17,7 +17,8 @@ export async function quoteRedemption(snapshot: LiveSnapshot, rpc: ReadOnlyRpc, 
     result.quotedAt = new Date().toISOString();
     const observe = (call: string) => { result.evidence.push({ sourceType: 'onchain_call', reference: `eip155:${snapshot.chainId}:${root.address}#${call}`, blockNumber: block.number, blockTimestamp: block.timestamp, observedAt: result.quotedAt }); };
     const read = (signature: string, args: readonly unknown[] = []) => rpc.read(root.address!, signature, args, block.number);
-    const balance = BigInt(String(await read('function balanceOf(address) view returns (uint256)', [owner])));
+    const balance = BigInt(rawInteger.parse(String(await read('function balanceOf(address) view returns (uint256)', [owner]))));
+    observe('balanceOf(owner)');
     const shares = sharesInput ? BigInt(rawInteger.parse(sharesInput)) : balance;
     if (shares <= 0n || shares > balance) {
       result.feasible = false;
@@ -33,7 +34,7 @@ export async function quoteRedemption(snapshot: LiveSnapshot, rpc: ReadOnlyRpc, 
       read('function asset() view returns (address)')
     ]);
     for (const call of ['balanceOf(owner)', 'maxWithdraw(owner)', 'previewRedeem(shares)', 'convertToAssets(shares)', 'asset()']) observe(call);
-    const max = BigInt(String(maxRaw)), preview = BigInt(String(previewRaw)), reference = BigInt(String(referenceRaw));
+    const max = BigInt(rawInteger.parse(String(maxRaw))), preview = BigInt(rawInteger.parse(String(previewRaw))), reference = BigInt(rawInteger.parse(String(referenceRaw)));
     result.maxWithdrawAssets = max.toString();
     result.previewAssets = preview.toString();
     const fee = reference > preview ? reference - preview : 0n;
@@ -44,6 +45,11 @@ export async function quoteRedemption(snapshot: LiveSnapshot, rpc: ReadOnlyRpc, 
       return result;
     }
     if (preview <= 0n) { result.reasons.push('Preview returns no assets; redeemability remains unresolved.'); return result; }
+    const ownerCode = await rpc.code(owner, block.number);
+    if (ownerCode && ownerCode !== '0x') {
+      result.reasons.push('Owner is a contract or delegated account. Wallet authorization and outer execution/gas require a separate model; impersonating that account is not a verified exit route.');
+      return result;
+    }
     const [gas, gasPrice] = await Promise.all([rpc.estimateRedeem(root.address, owner, shares.toString(), block.number), rpc.gasPrice()]);
     result.gasUnits = gas.toString(); result.gasPriceWei = gasPrice.toString();
     result.gasCostEth = formatUnits(gas * gasPrice, 18);
@@ -52,18 +58,23 @@ export async function quoteRedemption(snapshot: LiveSnapshot, rpc: ReadOnlyRpc, 
     const asset = addressSchema.parse(assetRaw);
     const decimals = Number(await rpc.read(asset, 'function decimals() view returns (uint8)', [], block.number));
     const existingPrice = snapshot.observations.find(observation => observation.entityId === `eip155:${snapshot.chainId}:${asset}` && observation.metric === 'priceUsd');
-    const price = existingPrice && typeof existingPrice.value === 'number' && existingPrice.evidence.blockTimestamp && Date.now() - Date.parse(existingPrice.evidence.blockTimestamp) < 15 * 60_000 ? existingPrice.value : null;
+    const priceAge = existingPrice?.evidence.blockTimestamp ? Date.now() - Date.parse(existingPrice.evidence.blockTimestamp) : NaN;
+    const price = existingPrice && typeof existingPrice.value === 'number' && existingPrice.value > 0 && Number.isFinite(priceAge) && priceAge >= 0 && priceAge < 15 * 60_000 ? existingPrice.value : null;
     if (price !== null && Number.isInteger(decimals) && decimals >= 0 && decimals <= 36) {
       result.assetPriceUsd = price;
       result.positionValueUsd = Number(formatUnits(reference, decimals)) * price;
       if (snapshot.chainId === 1) {
         const eth = await api.http.request(api.base + '/graphql', { query: 'query { assetByAddress(address:"0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", chainId:1) { price { usd timestamp } } }' });
         const value = z.object({ data: z.object({ assetByAddress: z.object({ price: z.object({ usd: z.number().finite().positive(), timestamp: rawInteger }).nullable() }).nullable() }) }).parse(eth).data.assetByAddress?.price;
-        if (value && Date.now() / 1000 - Number(value.timestamp) < 15 * 60) {
+        if (value && Date.now() / 1000 - Number(value.timestamp) >= 0 && Date.now() / 1000 - Number(value.timestamp) < 15 * 60) {
           result.costUsd = Number(formatUnits(fee, decimals)) * price + Number(result.gasCostEth) * value.usd;
           result.evidence.push({ sourceType: 'protocol_api', reference: api.base + '/graphql', sourcePath: 'assetByAddress(WETH).price', observedAt: result.quotedAt, timestamp: value.timestamp });
         }
       }
+    }
+    if ((result.costUsd !== null && !Number.isFinite(result.costUsd)) || (result.positionValueUsd !== undefined && !Number.isFinite(result.positionValueUsd))) {
+      result.costUsd = null; delete result.positionValueUsd;
+      result.reasons.push('Dollar valuation exceeds numeric limits.');
     }
     if (result.costUsd === null) result.reasons.push('Fresh underlying/native USD reference prices are unavailable; no dollar exit-cost comparison is produced.');
     result.reasons.push('This is a read-only estimate for direct redemption to the underlying asset, not a guaranteed fill or a swap into dollars. Gas price, state and withdrawal availability may change.');

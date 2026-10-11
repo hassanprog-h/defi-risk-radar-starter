@@ -22,6 +22,8 @@ export class SourceClient {
     if (!row || !row.SourceCode || !row.ABI.startsWith('[')) throw new ProviderError('UNVERIFIED_SOURCE');
     let abi;
     try { abi = z.array(abiEntry).max(1000).parse(JSON.parse(row.ABI)); } catch { throw new ProviderError('UNKNOWN_ABI'); }
-    return { name: row.ContractName, proxy: row.Proxy === '1', implementation: row.Implementation, abi, license: row.LicenseType ?? 'unknown', source: `https://etherscan.io/address/${address}#code` };
+    const explorer: Record<number, string> = { 1: 'etherscan.io', 8453: 'basescan.org', 42161: 'arbiscan.io', 10: 'optimistic.etherscan.io', 137: 'polygonscan.com' };
+    const source = explorer[chainId] ? `https://${explorer[chainId]}/address/${address}#code` : `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${address}`;
+    return { name: row.ContractName, proxy: row.Proxy === '1', implementation: row.Implementation, abi, license: row.LicenseType ?? 'unknown', source };
   }
 }
