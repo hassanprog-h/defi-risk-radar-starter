@@ -1,0 +1,323 @@
+{
+  "source": "https://api.morpho.org/graphql",
+  "query": "query InspectVault($address: String!, $chainId: Int!) {\n  vaultByAddress(address: $address, chainId: $chainId) { ...VaultFields }\n} fragment VaultFields on Vault {\n  address name symbol listed asset { address name symbol decimals price { usd timestamp } }\n  chain { id network headBlock { number timestamp } }\n  state { blockNumber timestamp totalAssets totalAssetsUsd totalSupply owner curator guardian timelock\n    allocation { blockNumber supplyAssets supplyAssetsUsd supplyShares supplyCap\n      market { ...MarketFields }\n    }\n  }\n} fragment MarketFields on Market {\n  marketId irmAddress lltv morphoBlue { address }\n  loanAsset { address name symbol decimals price { usd timestamp } } collateralAsset { address name symbol decimals price { usd timestamp } }\n  oracle { address type data { ... on MorphoChainlinkOracleData {\n    baseFeedOne { address } baseFeedTwo { address } quoteFeedOne { address } quoteFeedTwo { address }\n    baseOracleVault { address }\n  } } }\n  state { blockNumber timestamp supplyAssets borrowAssets liquidityAssets }\n}",
+  "variables": {
+    "address": "0x2371e134e3455e0593363cBF89d3b6cf53740618",
+    "chainId": 1
+  },
+  "retrievedAt": "2026-10-11T01:13:20.751Z",
+  "body": {
+    "data": {
+      "vaultByAddress": {
+        "address": "0x2371e134e3455e0593363cBF89d3b6cf53740618",
+        "name": "Gauntlet WETH Prime",
+        "symbol": "gtWETH",
+        "listed": true,
+        "asset": {
+          "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+          "name": "Wrapped Ether",
+          "symbol": "WETH",
+          "decimals": 18,
+          "price": {
+            "usd": 2503.540073979603,
+            "timestamp": 1791680943
+          }
+        },
+        "chain": {
+          "id": 1,
+          "network": "Ethereum",
+          "headBlock": {
+            "number": 26165845,
+            "timestamp": 1791681191
+          }
+        },
+        "state": {
+          "blockNumber": 26165844,
+          "timestamp": 1791681179,
+          "totalAssets": "3129463438066979080458",
+          "totalAssetsUsd": 7834737.127254669,
+          "totalSupply": "2968479985529235134538",
+          "owner": "0xC684c6587712e5E7BDf9fD64415F23Bd2b05fAec",
+          "curator": "0x9E33faAE38ff641094fa68c65c2cE600b3410585",
+          "guardian": "0x7084bF4dB6c21e1834dD6482f6056a39A33584cD",
+          "timelock": 604800,
+          "allocation": [
+            {
+              "blockNumber": 26165844,
+              "supplyAssets": "2628097959287882816002",
+              "supplyAssetsUsd": 6579548.559421231,
+              "supplyShares": "2498350380706414567434539118",
+              "supplyCap": "100000000000000000000000",
+              "market": {
+                "marketId": "0xb8fc70e82bc5bb53e773626fcc6a23f7eefa036918d7ef216ecfb1950a94a85e",
+                "irmAddress": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+                "lltv": "965000000000000000",
+                "morphoBlue": {
+                  "address": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb"
+                },
+                "loanAsset": {
+                  "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                  "name": "Wrapped Ether",
+                  "symbol": "WETH",
+                  "decimals": 18,
+                  "price": {
+                    "usd": 2503.540073979603,
+                    "timestamp": 1791680943
+                  }
+                },
+                "collateralAsset": {
+                  "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+                  "name": "Wrapped liquid staked Ether 2.0",
+                  "symbol": "wstETH",
+                  "decimals": 18,
+                  "price": {
+                    "usd": 3119.124510949065,
+                    "timestamp": 1791679980
+                  }
+                },
+                "oracle": {
+                  "address": "0xbD60A6770b27E084E8617335ddE769241B0e71D8",
+                  "type": "ChainlinkOracleV2",
+                  "data": {}
+                },
+                "state": {
+                  "blockNumber": 26165807,
+                  "timestamp": 1791680735,
+                  "supplyAssets": "34734491242011478674229",
+                  "borrowAssets": "28819042054472563070527",
+                  "liquidityAssets": "5915449187538915603702"
+                }
+              }
+            },
+            {
+              "blockNumber": 26165844,
+              "supplyAssets": 0,
+              "supplyAssetsUsd": 0,
+              "supplyShares": 0,
+              "supplyCap": "1000000000000000000000000000",
+              "market": {
+                "marketId": "0x58e212060645d18eab6d9b2af3d56fbc906a92ff5667385f616f662c70372284",
+                "irmAddress": "0x0000000000000000000000000000000000000000",
+                "lltv": 0,
+                "morphoBlue": {
+                  "address": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb"
+                },
+                "loanAsset": {
+                  "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                  "name": "Wrapped Ether",
+                  "symbol": "WETH",
+                  "decimals": 18,
+                  "price": {
+                    "usd": 2503.540073979603,
+                    "timestamp": 1791680943
+                  }
+                },
+                "collateralAsset": null,
+                "oracle": null,
+                "state": {
+                  "blockNumber": 26165805,
+                  "timestamp": 1791680711,
+                  "supplyAssets": "821515093812241914020",
+                  "borrowAssets": 0,
+                  "liquidityAssets": "821515093812241914020"
+                }
+              }
+            },
+            {
+              "blockNumber": 26165844,
+              "supplyAssets": "417637560129752845188",
+              "supplyAssetsUsd": 1045572.3681839025,
+              "supplyShares": "398870589852607205552561827",
+              "supplyCap": "25000000000000000000000",
+              "market": {
+                "marketId": "0xd0e50cdac92fe2172043f5e0c36532c6369d24947e40968f34a5e8819ca9ec5d",
+                "irmAddress": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+                "lltv": "945000000000000000",
+                "morphoBlue": {
+                  "address": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb"
+                },
+                "loanAsset": {
+                  "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                  "name": "Wrapped Ether",
+                  "symbol": "WETH",
+                  "decimals": 18,
+                  "price": {
+                    "usd": 2503.540073979603,
+                    "timestamp": 1791680943
+                  }
+                },
+                "collateralAsset": {
+                  "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+                  "name": "Wrapped liquid staked Ether 2.0",
+                  "symbol": "wstETH",
+                  "decimals": 18,
+                  "price": {
+                    "usd": 3119.124510949065,
+                    "timestamp": 1791679980
+                  }
+                },
+                "oracle": {
+                  "address": "0xbD60A6770b27E084E8617335ddE769241B0e71D8",
+                  "type": "ChainlinkOracleV2",
+                  "data": {}
+                },
+                "state": {
+                  "blockNumber": 26165808,
+                  "timestamp": 1791680747,
+                  "supplyAssets": "9387253157216689226479",
+                  "borrowAssets": "7950574407213964039440",
+                  "liquidityAssets": "1436678750002725187039"
+                }
+              }
+            },
+            {
+              "blockNumber": 26165844,
+              "supplyAssets": 2766020723983681,
+              "supplyAssetsUsd": 6.92484372795122,
+              "supplyShares": "2613536546541227925585",
+              "supplyCap": "20000000000000000000000",
+              "market": {
+                "marketId": "0x138eec0e4a1937eb92ebc70043ed539661dd7ed5a89fb92a720b341650288a40",
+                "irmAddress": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+                "lltv": "915000000000000000",
+                "morphoBlue": {
+                  "address": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb"
+                },
+                "loanAsset": {
+                  "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                  "name": "Wrapped Ether",
+                  "symbol": "WETH",
+                  "decimals": 18,
+                  "price": {
+                    "usd": 2503.540073979603,
+                    "timestamp": 1791680943
+                  }
+                },
+                "collateralAsset": {
+                  "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+                  "name": "Wrapped BTC",
+                  "symbol": "WBTC",
+                  "decimals": 8,
+                  "price": {
+                    "usd": 82771.19266274011,
+                    "timestamp": 1791680581
+                  }
+                },
+                "oracle": {
+                  "address": "0xc29B3Bc033640baE31ca53F8a0Eb892AdF68e663",
+                  "type": "ChainlinkOracleV2",
+                  "data": {}
+                },
+                "state": {
+                  "blockNumber": 26165804,
+                  "timestamp": 1791680699,
+                  "supplyAssets": "77773797802403717432",
+                  "borrowAssets": "54924262019416440497",
+                  "liquidityAssets": "22849535782987276935"
+                }
+              }
+            },
+            {
+              "blockNumber": 26165844,
+              "supplyAssets": 0,
+              "supplyAssetsUsd": 0,
+              "supplyShares": 0,
+              "supplyCap": "5000000000000000000000",
+              "market": {
+                "marketId": "0x2cbfb38723a8d9a2ad1607015591a78cfe3a5949561b39bde42c242b22874ec0",
+                "irmAddress": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+                "lltv": "915000000000000000",
+                "morphoBlue": {
+                  "address": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb"
+                },
+                "loanAsset": {
+                  "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                  "name": "Wrapped Ether",
+                  "symbol": "WETH",
+                  "decimals": 18,
+                  "price": {
+                    "usd": 2503.540073979603,
+                    "timestamp": 1791680943
+                  }
+                },
+                "collateralAsset": {
+                  "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+                  "name": "Coinbase Wrapped BTC",
+                  "symbol": "cbBTC",
+                  "decimals": 8,
+                  "price": {
+                    "usd": 82885.40619404195,
+                    "timestamp": 1791680943
+                  }
+                },
+                "oracle": {
+                  "address": "0x8F653cCFEbA16cF2c0B0D16bc82Bd6756C64f5D4",
+                  "type": "ChainlinkOracleV2",
+                  "data": {}
+                },
+                "state": {
+                  "blockNumber": 26165804,
+                  "timestamp": 1791680699,
+                  "supplyAssets": "74776062357689739482",
+                  "borrowAssets": "22864348761535210828",
+                  "liquidityAssets": "51911713596154528654"
+                }
+              }
+            },
+            {
+              "blockNumber": 26165844,
+              "supplyAssets": "83725152628619435587",
+              "supplyAssetsUsd": 209609.27480580745,
+              "supplyShares": "80202470027408378261042239",
+              "supplyCap": "30000000000000000000000",
+              "market": {
+                "marketId": "0x37e7484d642d90f14451f1910ba4b7b8e4c3ccdd0ec28f8b2bdb35479e472ba7",
+                "irmAddress": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+                "lltv": "945000000000000000",
+                "morphoBlue": {
+                  "address": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb"
+                },
+                "loanAsset": {
+                  "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                  "name": "Wrapped Ether",
+                  "symbol": "WETH",
+                  "decimals": 18,
+                  "price": {
+                    "usd": 2503.540073979603,
+                    "timestamp": 1791680943
+                  }
+                },
+                "collateralAsset": {
+                  "address": "0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee",
+                  "name": "Wrapped eETH",
+                  "symbol": "weETH",
+                  "decimals": 18,
+                  "price": {
+                    "usd": 2766.722952219147,
+                    "timestamp": 1791679980
+                  }
+                },
+                "oracle": {
+                  "address": "0xbDd2F2D473E8D63d1BFb0185B5bDB8046ca48a72",
+                  "type": "ChainlinkOracleV2",
+                  "data": {}
+                },
+                "state": {
+                  "blockNumber": 26165804,
+                  "timestamp": 1791680699,
+                  "supplyAssets": "5925710462856716144690",
+                  "borrowAssets": "4803271113063858212257",
+                  "liquidityAssets": "1122439349792857932433"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "extensions": {
+      "complexity": 770,
+      "maximumComplexity": 1000000
+    }
+  }
+}

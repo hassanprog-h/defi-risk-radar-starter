@@ -1,0 +1,224 @@
+[
+  {
+    "source": "https://api.morpho.org/v0/vaults-v1?chain_ids=1&limit=3",
+    "retrievedAt": "2026-10-11T01:13:18.436Z",
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "chain_id": 1,
+          "vault_address": "0x2371e134e3455e0593363cBF89d3b6cf53740618",
+          "version": "1.0",
+          "name": "Gauntlet WETH Prime",
+          "symbol": "gtWETH",
+          "asset_address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+          "factory_address": "0xA9c3D3a366466Fa809d1Ae982Fb2c46E5fC41101",
+          "creation_block_number": "19372149",
+          "creation_timestamp": 1709680067,
+          "performance_fee_wad": "50000000000000000",
+          "performance_fee_recipient": "0x34702F5F789196A723B8DF6334922f145A7db1b2",
+          "owner": "0xC684c6587712e5E7BDf9fD64415F23Bd2b05fAec",
+          "curator": "0x9E33faAE38ff641094fa68c65c2cE600b3410585"
+        },
+        {
+          "chain_id": 1,
+          "vault_address": "0x2C25f6C25770fFEC5959D34B94Bf898865e5D6b1",
+          "version": "1.0",
+          "name": "Flagship USDT",
+          "symbol": "bbUSDT",
+          "asset_address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+          "factory_address": "0xA9c3D3a366466Fa809d1Ae982Fb2c46E5fC41101",
+          "creation_block_number": "19127039",
+          "creation_timestamp": 1706711063,
+          "performance_fee_wad": "0",
+          "performance_fee_recipient": "0x8065228dcF441144D2bf567E8ca6E808e03a1e2f",
+          "owner": "0x2566f66f68ed438726AD904524FB306A03FdB80B",
+          "curator": "0x0000000000000000000000000000000000000000"
+        },
+        {
+          "chain_id": 1,
+          "vault_address": "0x2ed10624315b74a78f11FAbedAa1A228c198aEfB",
+          "version": "1.1",
+          "name": "Gauntlet EURC Core",
+          "symbol": "gteurcc",
+          "asset_address": "0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c",
+          "factory_address": "0x1897A8997241C1cD4bD0698647e4EB7213535c24",
+          "creation_block_number": "22834624",
+          "creation_timestamp": 1751496527,
+          "performance_fee_wad": "100000000000000000",
+          "performance_fee_recipient": "0x34702F5F789196A723B8DF6334922f145A7db1b2",
+          "owner": "0xC684c6587712e5E7BDf9fD64415F23Bd2b05fAec",
+          "curator": "0x9E33faAE38ff641094fa68c65c2cE600b3410585"
+        }
+      ],
+      "cursor": "eyJzIjoiYWRkcmVzcyIsImQiOiJhc2MiLCJ2IjoiMHgyZWQxMDYyNDMxNWI3NGE3OGYxMUZBYmVkQWExQTIyOGMxOThhRWZCIiwidk51bGwiOmZhbHNlLCJpIjpbMSwiMHgyZWQxMDYyNDMxNWI3NGE3OGYxMUZBYmVkQWExQTIyOGMxOThhRWZCIl0sImYiOiJURU03d3RKQ3ZnYjRXcVYxZWdhUThVIn0"
+    }
+  },
+  {
+    "source": "https://api.morpho.org/v0/vaults-v2?chain_ids=1&limit=3",
+    "retrievedAt": "2026-10-11T01:13:18.592Z",
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "chain_id": 1,
+          "vault_address": "0x04422053aDDbc9bB2759b248B574e3FCA76Bc145",
+          "version": "2.0",
+          "name": "Keyrock USDC",
+          "symbol": "kUSDC",
+          "asset_address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "factory_address": "0xA1D94F746dEfa1928926b84fB2596c06926C0405",
+          "creation_block_number": "23497927",
+          "creation_timestamp": 1759502651,
+          "management_fee_wad": null,
+          "management_fee_recipient": "0xbA75546ACD56b3a9142f94F179b03970eE4283Fd",
+          "performance_fee_wad": "50000000000000000",
+          "performance_fee_recipient": "0xbA75546ACD56b3a9142f94F179b03970eE4283Fd",
+          "owner": "0xbA75546ACD56b3a9142f94F179b03970eE4283Fd",
+          "curator": "0xbA75546ACD56b3a9142f94F179b03970eE4283Fd"
+        },
+        {
+          "chain_id": 1,
+          "vault_address": "0x069662D2588fcaC24B5c209456Db965D151556f0",
+          "version": "2.0",
+          "name": "Apyx USDC",
+          "symbol": "ApyxUSDC",
+          "asset_address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "factory_address": "0xA1D94F746dEfa1928926b84fB2596c06926C0405",
+          "creation_block_number": "25192577",
+          "creation_timestamp": 1779956075,
+          "management_fee_wad": null,
+          "management_fee_recipient": "0x514272d916419Eb3048d8eaDEbBDfF1B116273cD",
+          "performance_fee_wad": "80000000000000000",
+          "performance_fee_recipient": "0x514272d916419Eb3048d8eaDEbBDfF1B116273cD",
+          "owner": "0xEe7E9bb21D5589BF657b94083dB2fA349a3918C8",
+          "curator": "0x75178137D3B4B9A0F771E0e149b00fB8167BA325"
+        },
+        {
+          "chain_id": 1,
+          "vault_address": "0x07ecd7E0C348d526902258e3B1c4f2898057E611",
+          "version": "2.0",
+          "name": "Frax USDai Ecosystem",
+          "symbol": "re7frxUSD",
+          "asset_address": "0xCAcd6fd266aF91b8AeD52aCCc382b4e165586E29",
+          "factory_address": "0xA1D94F746dEfa1928926b84fB2596c06926C0405",
+          "creation_block_number": "26025965",
+          "creation_timestamp": 1789994675,
+          "management_fee_wad": null,
+          "management_fee_recipient": null,
+          "performance_fee_wad": "100000000000000000",
+          "performance_fee_recipient": "0x93db2e90F8B2b073010B425f9350202330bd923E",
+          "owner": "0xa58f41ddFD3E8e601349DbF5ac0213F614150f0f",
+          "curator": "0xa58f41ddFD3E8e601349DbF5ac0213F614150f0f"
+        }
+      ],
+      "cursor": "eyJ2IjoxLCJzIjoidmF1bHRfYWRkcmVzcyIsImQiOiJhc2MiLCJmIjoiWlNTanBZRnpsd0dZa2N5cnV4RndBVyIsInZhbHVlIjoiMHgwN2VjZDdlMGMzNDhkNTI2OTAyMjU4ZTNiMWM0ZjI4OTgwNTdlNjExIiwiY2hhaW5JZCI6MSwidmF1bHRBZGRyZXNzIjoiMHgwN2VjZDdFMEMzNDhkNTI2OTAyMjU4ZTNCMWM0ZjI4OTgwNTdFNjExIn0"
+    }
+  },
+  {
+    "source": "https://api.morpho.org/v0/vaults-v1/1:0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB",
+    "retrievedAt": "2026-10-11T01:13:18.688Z",
+    "status": 200,
+    "body": {
+      "data": {
+        "chain_id": 1,
+        "address": "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB",
+        "last_indexed_block": "26165845",
+        "version": "1.0",
+        "name": "Steakhouse USDC",
+        "symbol": "steakUSDC",
+        "asset": {
+          "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "decimals": 6,
+          "name": "USDCoin",
+          "symbol": "USDC"
+        },
+        "factory_address": "0xA9c3D3a366466Fa809d1Ae982Fb2c46E5fC41101",
+        "creation_block_number": "18928285",
+        "fee_wad": "50000000000000000",
+        "fee_recipient": "0x255c7705e8BB334DfCae438197f7C4297988085a",
+        "skim_recipient": null,
+        "owner": "0x0A0e559bc3b0950a7e448F0d4894db195b9cf8DD",
+        "curator": "0x827e86072B06674a077f592A531dcE4590aDeCdB",
+        "guardian": "0xaa0500198B4425DfC4E272FbE42C8E64E21fc03d",
+        "timelock_seconds": 604800
+      }
+    }
+  },
+  {
+    "source": "https://api.morpho.org/v0/vaults-v1/1:0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB/state",
+    "retrievedAt": "2026-10-11T01:13:18.789Z",
+    "status": 200,
+    "body": {
+      "data": {
+        "chain_id": 1,
+        "address": "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB",
+        "last_indexed_block": "26165845",
+        "total_assets": "65320292576982",
+        "total_supply": "57123246777302950355890443",
+        "withdrawable_assets": "48092506690078",
+        "share_price_ray": "1143497547183117698743719690"
+      }
+    }
+  },
+  {
+    "source": "https://api.morpho.org/v0/vaults-v2/1:0x04422053aDDbc9bB2759b248B574e3FCA76Bc145",
+    "retrievedAt": "2026-10-11T01:13:18.842Z",
+    "status": 200,
+    "body": {
+      "data": {
+        "chain_id": 1,
+        "address": "0x04422053aDDbc9bB2759b248B574e3FCA76Bc145",
+        "last_indexed_block": "26165845",
+        "version": "2.0",
+        "name": "Keyrock USDC",
+        "symbol": "kUSDC",
+        "asset": {
+          "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "decimals": 6,
+          "name": "USDCoin",
+          "symbol": "USDC"
+        },
+        "decimals_offset": 12,
+        "factory_address": "0xA1D94F746dEfa1928926b84fB2596c06926C0405",
+        "creation_block_number": "23497927",
+        "owner": "0xbA75546ACD56b3a9142f94F179b03970eE4283Fd",
+        "curator": "0xbA75546ACD56b3a9142f94F179b03970eE4283Fd",
+        "timelock_seconds": 604800,
+        "management_fee_wad": null,
+        "management_fee_recipient": "0xbA75546ACD56b3a9142f94F179b03970eE4283Fd",
+        "performance_fee_wad": "50000000000000000",
+        "performance_fee_recipient": "0xbA75546ACD56b3a9142f94F179b03970eE4283Fd",
+        "max_rate_per_second_wad": "3805175038",
+        "adapter_registry": "0x3696c5eAe4a7Ffd04Ea163564571E9CD8Ed9364e",
+        "liquidity_adapter": "0x7CA32dCD9269b0BeB21a4F364DED5cfFCB7b3635",
+        "liquidity_data": "0x64d65c9a2d91c36d56fbc42d69e979335320169b3df63bf92789e2c8883fcc64",
+        "gates": {
+          "send_shares": null,
+          "receive_shares": null,
+          "send_assets": null,
+          "receive_assets": null
+        }
+      }
+    }
+  },
+  {
+    "source": "https://api.morpho.org/v1/vaults-v2/1:0x04422053aDDbc9bB2759b248B574e3FCA76Bc145/state",
+    "retrievedAt": "2026-10-11T01:13:19.225Z",
+    "status": 200,
+    "body": {
+      "data": {
+        "chain_id": 1,
+        "address": "0x04422053aDDbc9bB2759b248B574e3FCA76Bc145",
+        "last_indexed_block": "26165845",
+        "last_accrual_timestamp": 1791681200,
+        "total_assets": "7415658750017",
+        "total_supply": "6992097303628349325350420",
+        "withdrawable_assets": "1644301979550",
+        "allocated_assets": "7415658750017",
+        "idle_assets": "0",
+        "share_price_ray": "1060577167049548205555815495"
+      }
+    }
+  }
+]

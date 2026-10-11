@@ -11,6 +11,7 @@
 - CLI fixture demo; unit tests.
 - **Check:** `npm run demo && npm test` runs without external API access after dependency install.
 - **State:** demo fixture only, not live blockchain.
+- **Local visual explorer:** `npm run dev` serves the full fixture graph at http://localhost:3000 with evidence inspection, affected-path highlighting, hypothetical scenario controls and JSON export. It reuses the domain seed; live address inspection and the M3 live dashboard remain pending.
 
 ## Milestone 1 — FIRST CODEX TASK: single real Morpho Vault V1 end-to-end discovery
 

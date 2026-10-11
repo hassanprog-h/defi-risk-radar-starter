@@ -15,13 +15,17 @@ export function validateSnapshot(snapshot: GraphSnapshot): string[] {
     if (e.allocationBps !== undefined && (e.kind !== "ALLOCATES_TO" || !Number.isFinite(e.allocationBps) || e.allocationBps < 0 || e.allocationBps > 10000)) {
       problems.push(`Invalid allocation: ${e.id}`);
     }
-    if (!e.evidence.reference) problems.push(`Edge lacks evidence: ${e.id}`);
+    if (!e.evidence?.reference) problems.push(`Edge lacks evidence: ${e.id}`);
   }
   return problems;
 }
 
 /** Reverse traversal: from failed dependency to all things depending on it. */
 export function affectedPaths(snapshot: GraphSnapshot, failedNodeId: string): string[][] {
+  return traceAffectedPaths(snapshot, failedNodeId).paths;
+}
+
+export function traceAffectedPaths(snapshot: Pick<GraphSnapshot, 'edges' | 'rootPositionId'>, failedNodeId: string): { paths: string[][]; truncated: boolean } {
   const reverse = new Map<string, string[]>();
   for (const e of snapshot.edges) {
     const xs = reverse.get(e.to) ?? [];
@@ -31,17 +35,24 @@ export function affectedPaths(snapshot: GraphSnapshot, failedNodeId: string): st
   const paths: string[][] = [];
   const queue: string[][] = [[failedNodeId]];
   const maxDepth = 20;
-  while (queue.length) {
-    const path = queue.shift()!;
+  const maxExpansions = 10000;
+  let cursor = 0;
+  let truncated = false;
+  while (cursor < queue.length) {
+    if (cursor >= maxExpansions) { truncated = true; break; }
+    const path = queue[cursor++]!;
     const node = path[path.length - 1]!;
     if (node === snapshot.rootPositionId) {
       paths.push(path);
       continue;
     }
-    if (path.length >= maxDepth) continue;
+    if (path.length >= maxDepth) { if ((reverse.get(node) ?? []).some(id => !path.includes(id))) truncated = true; continue; }
     for (const dependent of reverse.get(node) ?? []) {
-      if (!path.includes(dependent)) queue.push([...path, dependent]);
+      if (!path.includes(dependent)) {
+        if (queue.length >= maxExpansions) { truncated = true; continue; }
+        queue.push([...path, dependent]);
+      }
     }
   }
-  return paths;
+  return { paths, truncated };
 }

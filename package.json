@@ -3,12 +3,27 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
+    "dev": "npm run build && node scripts/viewer-server.mjs",
+    "inspect": "npm run build && node scripts/inspect.mjs",
+    "check:providers": "npm run build && node scripts/check-providers.mjs",
     "build": "tsc -p tsconfig.json",
     "demo": "npm run build && node scripts/demo.mjs",
     "test": "npm run build && node --test tests/*.test.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "replay": "npm run build && node scripts/replay.mjs",
+    "test:browser": "npm run build && node scripts/browser-smoke.mjs"
   },
-  "devDependencies": { "typescript": "^5.9.0" }
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^26.6.5",
+    "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "viem": "^2.57.4",
+    "zod": "^4.6.5"
+  }
 }

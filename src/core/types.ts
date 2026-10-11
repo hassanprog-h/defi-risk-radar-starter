@@ -8,7 +8,7 @@ export type EdgeKind =
   | "HOLDS_SHARES_IN" | "ALLOCATES_TO" | "USES_ORACLE" | "ACCEPTS_COLLATERAL"
   | "ACCOUNTING_ASSET" | "BACKED_BY" | "EARNS_YIELD_FROM"
   | "SETTLES_ON" | "CONTROLLED_BY" | "UPGRADEABLE_BY"
-  | "BRIDGED_BY" | "EXITS_THROUGH" | "USES_CONTRACT";
+  | "BRIDGED_BY" | "EXITS_THROUGH" | "USES_CONTRACT" | "CLAIM_ON" | "WRAPS" | "PRICED_IN" | "USES_PRICE_FEED" | "USES_AMM";
 
 export type EvidenceStatus = "verified" | "inferred" | "unresolved";
 
@@ -20,6 +20,9 @@ export interface Evidence {
   chainId?: number;
   blockNumber?: string;
   notes?: string;
+  sourcePath?: string;
+  verification?: 'api_indexed' | 'onchain_verified' | 'fixture_only' | 'documentation_only';
+  blockTimestamp?: string;
 }
 
 export interface GraphNode {
@@ -28,6 +31,7 @@ export interface GraphNode {
   label: string;
   chainId?: number;
   address?: string;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 export interface GraphEdge {
@@ -37,6 +41,8 @@ export interface GraphEdge {
   kind: EdgeKind;
   allocationBps?: number; // Only for capital-allocation edges; 10,000 = 100%
   evidence: Evidence;
+  corroboration?: Evidence[];
+  role?: string;
 }
 
 export interface GraphSnapshot {
